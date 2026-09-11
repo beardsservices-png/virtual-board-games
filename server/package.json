@@ -1,0 +1,19 @@
+{
+  "name": "@vbg/server",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "dev": "node --watch src/index.js",
+    "start": "node src/index.js"
+  },
+  "dependencies": {
+    "@vbg/shared": "*",
+    "better-sqlite3": "^11.7.0",
+    "chess.js": "^1.0.0",
+    "compression": "^1.7.5",
+    "express": "^4.21.2",
+    "socket.io": "^4.8.1"
+  }
+}
