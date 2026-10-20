@@ -165,6 +165,14 @@ copied into the build as-is):
   building on a TV, and a shopping list. Default size is 1 block = 2 inches
   (102 x 36 x 41, about 19,100 blocks hollow).
 
+Since 20 Oct the page is also a small library: **From a picture** turns any
+PNG/JPG into a full-block build (upright wall or flat floor, 1-8 thick,
+concrete/wool/all-color palettes, matched in Lab colour space), saved in the
+browser's localStorage only. **TV build mode** shows one row at a time, big,
+and remembers finished rows. **Starting block** (col 1, row 1, layer 1; red
+post in 3D) takes the in-game X/Y/Z and directions, then every row shows game
+coordinates.
+
 The truck is drawn as a shape (`classify(x, y, z)` in the page) in units of
 about 14 cm, then sampled at whatever size the sliders ask for, so changes are
 edits to that one function. Brian plays Bedrock on PS5, which cannot import

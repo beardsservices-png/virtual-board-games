@@ -94,6 +94,40 @@ th.num{text-align:right}
 .layers button.cur{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
 .layers button.ok{box-shadow:inset 0 -3px 0 var(--good)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+.shelf{display:flex;gap:10px;overflow-x:auto;padding-bottom:4px}
+.bcard{flex:none;width:132px;display:flex;flex-direction:column;gap:6px;padding:8px;text-align:left;background:var(--cell);border:1px solid var(--line);border-radius:5px;cursor:pointer;font:inherit;color:var(--fg)}
+.bcard.cur{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.bcard .th{width:100%;aspect-ratio:4/3;border-radius:3px;background:var(--panel) center/contain no-repeat;image-rendering:pixelated;display:grid;place-items:center;font-family:var(--display);font-size:22px;color:var(--muted)}
+.bcard span{font-size:13px;line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bcard.add{border-style:dashed;justify-content:center;align-items:center;text-align:center}
+.bcard.add input{position:absolute;width:1px;height:1px;opacity:0}
+.field{display:flex;flex-direction:column;gap:4px;min-width:0}
+.field span{font-size:14px;color:var(--muted)}
+.field b{font-family:var(--mono);color:var(--fg)}
+.field input[type=text],.field input[type=number],.field select{font:inherit;font-size:14px;padding:6px 8px;border:1px solid var(--line);border-radius:4px;background:var(--cell);color:var(--fg);min-width:0;width:100%}
+.danger{border-color:#b3322e;color:#b3322e}
+.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600}
+.tvbtn{font-size:16px;padding:10px 16px}
+.coords{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px 16px}
+.tv{position:fixed;inset:0;z-index:50;background:var(--bg);overflow:auto;display:flex;flex-direction:column;gap:16px;
+  padding-top:max(16px,env(safe-area-inset-top,0px));padding-bottom:max(16px,env(safe-area-inset-bottom,0px));
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.tvtop{display:flex;flex-wrap:wrap;gap:10px 20px;align-items:center;justify-content:space-between}
+.tvtop .where{font-family:var(--mono);font-size:clamp(20px,3vw,34px);font-weight:600;font-variant-numeric:tabular-nums}
+.tvtop .name{font-family:var(--display);font-size:clamp(18px,2.4vw,26px)}
+.tvstrip{overflow-x:auto;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:10px}
+.tvstrip canvas{display:block}
+.tvruns{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.tvruns li{display:flex;flex-wrap:wrap;gap:6px 16px;align-items:center;font-size:clamp(18px,2.3vw,28px);padding:10px 14px;background:var(--panel);border:1px solid var(--line);border-radius:6px}
+.tvruns i{width:1.3em;height:1.3em;border-radius:4px;border:1px solid rgba(127,127,127,.4);flex:none}
+.tvruns .ct{font-family:var(--mono);font-weight:600;font-variant-numeric:tabular-nums}
+.tvruns .xyz{font-family:var(--mono);font-size:.75em;color:var(--muted);font-variant-numeric:tabular-nums}
+.tvbottom{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end;justify-content:space-between;margin-top:auto}
+.tvbottom canvas{max-width:100%;border:1px solid var(--line);border-radius:4px;background:var(--panel)}
+.tvbtns{display:flex;gap:12px;flex-wrap:wrap}
+.tvbtns button{font-size:clamp(18px,2.2vw,26px);padding:14px 24px}
+.tvprog{font-family:var(--mono);color:var(--muted)}
+details.counts summary{cursor:pointer;font-family:var(--display);font-size:22px}
 </style>
 </head>
 <body>
@@ -101,13 +135,18 @@ th.num{text-align:right}
 <div class="wrap">
   <header>
     <div>
-      <h1>Lifted Tacoma Build</h1>
-      <p>Your black double-cab Tacoma with the lift, chrome bull bar with LED light bar, hard bed cover, flared fenders and black off-road wheels, in full blocks at any size you pick. Step through it one layer at a time, from the tires up to the roof.</p>
+      <h1 id="bname">Lifted Tacoma</h1>
+      <p id="bdesc"></p>
     </div>
     <div class="chips" id="chips"></div>
   </header>
 
-  <section class="card" aria-label="Size">
+  <section class="card" aria-label="My builds">
+    <div class="gridhead"><h2>My builds</h2><span class="cellinfo" id="libinfo">Saved in this browser.</span></div>
+    <div class="shelf" id="shelf"></div>
+  </section>
+
+  <section class="card" aria-label="Size" id="sizecard">
     <div class="gridhead"><h2>Size</h2>
       <div class="row"><label class="toggle"><input type="checkbox" id="lock" checked> Keep proportions</label><button id="inch">1 block = 2 inches</button></div></div>
     <div class="sizes">
@@ -118,19 +157,34 @@ th.num{text-align:right}
     <div class="cellinfo" id="sizeinfo">Drag a slider and let go to rebuild. Full blocks only, no stairs or slabs.</div>
   </section>
 
+  <section class="card" aria-label="Picture settings" id="piccard" hidden>
+    <div class="gridhead"><h2>Picture settings</h2>
+      <div class="row" id="delrow"><button id="del" class="danger">Delete this build</button></div></div>
+    <div class="sizes">
+      <label class="field"><span>Name</span><input type="text" id="pname" maxlength="40"></label>
+      <label class="sz"><span>Width <b id="vPW">64</b> blocks · height <b id="vPH">64</b></span><input type="range" id="pw" min="8" max="256" value="64"></label>
+      <label class="sz"><span>Thickness <b id="vPT">1</b></span><input type="range" id="pt" min="1" max="8" value="1"></label>
+      <label class="field"><span>Stand it</span><select id="por"><option value="up">Upright, like a wall</option><option value="flat">Flat on the ground</option></select></label>
+      <label class="field"><span>Blocks to use</span><select id="ppal"><option value="cw">Concrete and wool</option><option value="c">Concrete only</option><option value="all">Every full color block</option></select></label>
+      <label class="toggle"><input type="checkbox" id="pbg"> Leave the background empty</label>
+    </div>
+    <div class="cellinfo" id="picinfo">Changes rebuild when you let go. Transparent parts of a PNG are left empty.</div>
+  </section>
+
   <div class="main">
     <section class="card" aria-label="3D model">
-      <div class="stage" id="stage"><canvas id="cv3"></canvas><div class="loading" id="loading">Building the truck…</div><span class="hint">drag to turn · scroll or pinch to zoom</span></div>
+      <div class="stage" id="stage"><canvas id="cv3"></canvas><div class="loading" id="loading">Building…</div><span class="hint">drag to turn · scroll or pinch to zoom · red post = starting block</span></div>
       <div class="row">
-        <button data-view="front">Front ¾</button>
+        <button data-view="front">Front</button>
         <button data-view="side">Side</button>
-        <button data-view="rear">Rear ¾</button>
+        <button data-view="rear">Back</button>
         <button data-view="top">Top</button>
         <label class="toggle"><input type="checkbox" id="ghost" checked> Show the rest faintly</label>
       </div>
     </section>
 
     <section class="card" aria-label="Layer controls">
+      <button id="tvopen" class="primary tvbtn">TV build mode: one row at a time</button>
       <div class="stepper">
         <button id="prev" aria-label="Previous layer">‹</button>
         <div class="big" id="lnum">1 <small>/ 60</small></div>
@@ -147,6 +201,19 @@ th.num{text-align:right}
       <div class="layers" id="layers" aria-label="Jump to layer"></div>
     </section>
   </div>
+
+  <section class="card" aria-label="Starting block">
+    <div class="gridhead"><h2>Starting block</h2><button id="aclear">Clear</button></div>
+    <p class="note" id="anchornote"></p>
+    <div class="coords">
+      <label class="field"><span>X</span><input type="number" id="ax" inputmode="numeric"></label>
+      <label class="field"><span>Y</span><input type="number" id="ay" inputmode="numeric"></label>
+      <label class="field"><span>Z</span><input type="number" id="az" inputmode="numeric"></label>
+      <label class="field"><span>Columns run toward</span><select id="acol"><option value="E">East (+X)</option><option value="W">West (−X)</option><option value="S">South (+Z)</option><option value="N">North (−Z)</option></select></label>
+      <label class="field"><span>Rows run toward</span><select id="arow"></select></label>
+    </div>
+    <div class="cellinfo" id="anchorinfo">Fill in X, Y and Z to see in-game coordinates on every row.</div>
+  </section>
 
   <section class="card" aria-label="Layer plan">
     <div class="gridhead">
@@ -165,51 +232,78 @@ th.num{text-align:right}
   </section>
 
   <section class="card">
-    <h2>Shopping list</h2>
-    <div class="tablewrap"><table>
-      <thead><tr><th>Block</th><th>Used for</th><th class="num">Blocks</th><th class="num">Stacks of 64</th><th class="num">Shulker boxes</th></tr></thead>
-      <tbody id="mats"></tbody>
-    </table></div>
+    <details class="counts"><summary>Block counts</summary>
+      <div class="tablewrap"><table>
+        <thead><tr><th>Block</th><th>Used for</th><th class="num">Blocks</th><th class="num">Stacks of 64</th></tr></thead>
+        <tbody id="mats"></tbody>
+      </table></div>
+    </details>
   </section>
 
   <section class="card">
     <h2>How to read the plan</h2>
     <ul class="tips">
-      <li><b>One square = one block</b><span>Columns run front to back (col 1 is the bull bar). Rows run side to side (row 1 is the passenger side, last row the driver side). Thick lines every 10.</span></li>
-      <li><b>Mark the footprint first</b><span>Lay a <span id="fp">148 × 52</span> outline on the ground with any throwaway block, then build layer 1 inside it and break the outline after.</span></li>
-      <li><b>Faint squares are the layer below</b><span>Use them to line up each new layer. The amber frame in the 3D view shows the layer you're on.</span></li>
-      <li><b>Skip hidden blocks is on</b><span>The body is built as a 1–2 block shell, so you never fill the inside of the hood or doors. Turn it off to see a solid fill instead.</span></li>
-      <li><b>Row by row</b><span>Under the grid, each row is written out as runs, e.g. "cols 12–40 B×29" means 29 Black Concrete in a straight line. Easier to follow on a TV than counting squares.</span></li>
-      <li><b>Glass sits flush</b><span>Use full stained-glass blocks, not panes, so the sloped windshield reads correctly.</span></li>
-      <li><b>Scale</b><span id="scaletip"></span></li>
+      <li><b>One square = one block</b><span>Columns run left to right on the grid, rows top to bottom. On the truck, col 1 is the bull bar and row 1 is the passenger side. Thick lines every 10.</span></li>
+      <li><b>Starting block</b><span>Col 1, row 1, layer 1 is the corner everything is measured from. It's the red post in the 3D view and the red square on layer 1.</span></li>
+      <li><b>TV build mode</b><span>Shows one row at a time, big. Tap "Done, next row" after each one; it remembers where you stopped.</span></li>
+      <li><b>From a picture</b><span>Add any PNG or JPG and it becomes a block build, saved in this browser. Transparent parts of a PNG are left empty.</span></li>
+      <li><b>Skip hidden blocks</b><span>Leaves out blocks nobody can see from outside, so solid shapes are built as shells.</span></li>
+      <li><b>Glass sits flush</b><span>Use full stained-glass blocks, not panes.</span></li>
     </ul>
   </section>
+</div>
+
+<div class="tv" id="tv" hidden role="dialog" aria-label="TV build mode">
+  <div class="tvtop">
+    <span class="name" id="tvname"></span>
+    <span class="where" id="tvwhere"></span>
+    <span class="tvprog" id="tvprog"></span>
+    <button id="tvexit" class="tvbtn">Exit</button>
+  </div>
+  <div class="tvstrip"><canvas id="tvrow"></canvas></div>
+  <ol class="tvruns" id="tvruns"></ol>
+  <div class="tvbottom">
+    <canvas id="tvmap"></canvas>
+    <div class="tvbtns"><button id="tvback">◀ Back</button><button id="tvskip">Skip</button><button id="tvnext" class="primary">Done, next row ▶</button></div>
+  </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 <script>
-// ---------- palette ----------
-const CODES=['','B','T','P','G','I','S','W','H','Y','O','R','K','Q','F','U'];
-const BLOCKS={
-  B:{name:'Black Concrete',use:'Body, hood, doors, roof, fender flares, mirrors, wheel tubs',c:'#24272d'},
-  T:{name:'Black Wool',use:'Tires',c:'#34353b'},
-  P:{name:'Polished Blackstone',use:'Hard bed cover, rim spokes, dashboard, bed liner, door handles',c:'#3d3c41'},
-  G:{name:'Gray Concrete',use:'Frame, axles, diffs, driveshaft, shocks, steering wheel',c:'#5a6067'},
-  I:{name:'Iron Block',use:'Chrome bull bar tube, wheel center caps, headlight projectors',c:'#dcdfe1'},
-  S:{name:'Smooth Stone',use:'Tube running boards, rim lip rings, rear bumper',c:'#a9aaaa'},
-  W:{name:'Light Gray Stained Glass',use:'Windshield and windows',c:'#a7b0b8',glass:.5},
-  H:{name:'White Stained Glass',use:'Headlights, reverse lights',c:'#f3f5f6',glass:.85},
-  Y:{name:'Yellow Concrete',use:'Headlight inner trim',c:'#f1b419'},
-  O:{name:'Orange Concrete',use:'Side marker lights',c:'#e0650f'},
-  R:{name:'Red Concrete',use:'Tail lights',c:'#a8282c'},
-  K:{name:'Blackstone',use:'Mesh grille, LED bar housing, intake, rim recess, door seams, scoop vent',c:'#16131a'},
-  Q:{name:'Quartz Block',use:'TACOMA badge, TRD Sport decal',c:'#ede8e2'},
-  F:{name:'Sea Lantern',use:'LED light bar, fog lights',c:'#d6ece8'},
-  U:{name:'Gray Wool',use:'Seats and headrests',c:'#62676d'}
-};
-const IDX={};CODES.forEach((c,i)=>IDX[c]=i);
-const [B,T,P,G,I,S_,W,H,Yc,O,R,K,Q,F,U]=CODES.slice(1).map(c=>IDX[c]);
+// ---------- block catalog: index = voxel value ----------
+const CAT=[null], CATIDX={};
+function addBlock(name,c,ex){ex=ex||{};
+  if(CATIDX[name]){if(ex.m)CAT[CATIDX[name]].m=ex.m;return CATIDX[name];}
+  CAT.push(Object.assign({name,c,m:c},ex));return CATIDX[name]=CAT.length-1;}
+const B=addBlock('Black Concrete','#24272d',{m:'#080a0f',use:'Body, hood, doors, roof, fender flares, mirrors, wheel tubs'});
+const T=addBlock('Black Wool','#34353b',{m:'#141519',use:'Tires'});
+const P=addBlock('Polished Blackstone','#3d3c41',{m:'#35303b',use:'Hard bed cover, rim spokes, dashboard, bed liner, door handles'});
+const G=addBlock('Gray Concrete','#5a6067',{m:'#373a3e',use:'Frame, axles, diffs, driveshaft, shocks, steering wheel'});
+const I=addBlock('Iron Block','#dcdfe1',{use:'Chrome bull bar tube, wheel center caps, headlight projectors'});
+const S_=addBlock('Smooth Stone','#a9aaaa',{m:'#9e9e9e',use:'Tube running boards, rim lip rings, rear bumper'});
+const W=addBlock('Light Gray Stained Glass','#a7b0b8',{glass:.5,use:'Windshield and windows'});
+const H=addBlock('White Stained Glass','#f3f5f6',{glass:.85,use:'Headlights, reverse lights'});
+const Yc=addBlock('Yellow Concrete','#f1b419',{m:'#f1af15',use:'Headlight inner trim'});
+const O=addBlock('Orange Concrete','#e0650f',{m:'#e06101',use:'Side marker lights'});
+const R=addBlock('Red Concrete','#a8282c',{m:'#8e2121',use:'Tail lights'});
+const K=addBlock('Blackstone','#16131a',{m:'#2a2328',use:'Mesh grille, LED bar housing, intake, rim recess, door seams, scoop vent'});
+const Q=addBlock('Quartz Block','#ede8e2',{use:'TACOMA badge, TRD Sport decal'});
+const F=addBlock('Sea Lantern','#d6ece8',{m:'#acc8be',use:'LED light bar, fog lights'});
+const U=addBlock('Gray Wool','#62676d',{m:'#3e4447',use:'Seats and headrests'});
+const TACODE={[B]:'B',[T]:'T',[P]:'P',[G]:'G',[I]:'I',[S_]:'S',[W]:'W',[H]:'H',[Yc]:'Y',[O]:'O',[R]:'R',[K]:'K',[Q]:'Q',[F]:'F',[U]:'U'};
+
+// colors for pictures (Minecraft's average texture colors)
+const DYES=['White','Orange','Magenta','Light Blue','Yellow','Lime','Pink','Gray','Light Gray','Cyan','Purple','Blue','Brown','Green','Red','Black'];
+const CONC=['#cfd5d6','#e06101','#a9309f','#2489c7','#f1af15','#5ea918','#d5658f','#373a3e','#7d7d73','#157788','#64209c','#2d2f8f','#603c20','#495b24','#8e2121','#080a0f'];
+const WOOLC=['#e9ecec','#f07613','#bd44b3','#3aafd9','#f8c627','#70b919','#ed8dac','#3e4447','#8e8e86','#158991','#792aac','#35399d','#724728','#546d1b','#a12722','#141519'];
+const TERC=['#d1b2a1','#a15325','#95576c','#716c89','#ba8523','#677534','#a04d4e','#392a23','#876b62','#575b5b','#764656','#4a3b5b','#4d3323','#4c532a','#8f3d2e','#251610'];
+const OTHER=[['Terracotta','#985e43'],['Quartz Block','#ece6df'],['Smooth Stone','#9e9e9e'],['Stone','#7d7d7d'],['Iron Block','#dcdcdc'],['Gold Block','#f6d03d'],['Diamond Block','#62ede4'],['Emerald Block','#2acb57'],['Lapis Lazuli Block','#1f438c'],['Redstone Block','#af1805'],['Coal Block','#101010'],['Snow Block','#f9fefe'],['Sandstone','#d8cb9b'],['Red Sandstone','#ba631d'],['Oak Planks','#a2834f'],['Spruce Planks','#735531'],['Birch Planks','#c0af79'],['Dark Oak Planks','#422b14'],['Acacia Planks','#a85a32'],['Jungle Planks','#a07351'],['Cherry Planks','#e2b2ac'],['Prismarine','#639c97'],['Dark Prismarine','#335b4b'],['Purpur Block','#a97da9'],['End Stone','#dbde9e'],['Nether Bricks','#2c161a'],['Blackstone','#2a2328'],['Deepslate','#505053'],['Bricks','#976253'],['Packed Ice','#8db4fa'],['Honeycomb Block','#e5941e']];
+const concIdx=DYES.map((d,i)=>addBlock(d+' Concrete',CONC[i],{m:CONC[i]}));
+const woolIdx=DYES.map((d,i)=>addBlock(d+' Wool',WOOLC[i],{m:WOOLC[i]}));
+const terrIdx=DYES.map((d,i)=>addBlock(d+' Terracotta',TERC[i],{m:TERC[i]}));
+const otherIdx=OTHER.map(([n,c])=>addBlock(n,c,{m:c}));
+const PALS={c:concIdx,cw:[...concIdx,...woolIdx],all:[...new Set([...concIdx,...woolIdx,...terrIdx,...otherIdx])]};
 
 // ---------- the truck, as a shape sampled at 4 blocks per unit ----------
 let SX=4,SY=4,SZ=4,X,Y,Z,N,vox,exposed,TH=.3,TB=.5;
@@ -326,30 +420,69 @@ function classify(x,y,z){
   return B;
 }
 
+
 const id=(i,j,k)=>(j*Z+k)*X+i;
-function voxelize(lx,wz,hy){
-  X=lx;Z=wz;Y=hy;SX=X/37;SZ=Z/13;SY=Y/15;const sm=Math.min(SX,SY,SZ);TH=Math.max(.3,1.05/sm);TB=Math.max(.5,1.05/sm);
-  N=X*Y*Z;vox=new Uint8Array(N);
-  for(let j=0;j<Y;j++)for(let k=0;k<Z;k++)for(let i=0;i<X;i++)vox[id(i,j,k)]=classify((i+.5)/SX,(j+.5)/SY,(k+.5)/SZ);
+const isGlass=v=>v&&CAT[v].glass;
+const solidAt=(i,j,k)=>{if(i<0||j<0||k<0||i>=X||j>=Y||k>=Z)return false;const v=vox[id(i,j,k)];return v&&!isGlass(v);};
+function computeExposed(){
   exposed=new Uint8Array(N);
   for(let j=0;j<Y;j++)for(let k=0;k<Z;k++)for(let i=0;i<X;i++){const n=id(i,j,k);if(!vox[n])continue;
     exposed[n]=!(solidAt(i+1,j,k)&&solidAt(i-1,j,k)&&solidAt(i,j+1,k)&&solidAt(i,j-1,k)&&solidAt(i,j,k+1)&&solidAt(i,j,k-1))?1:0;}
 }
-const isGlass=v=>v&&BLOCKS[CODES[v]].glass;
-const solidAt=(i,j,k)=>{if(i<0||j<0||k<0||i>=X||j>=Y||k>=Z)return false;const v=vox[id(i,j,k)];return v&&!isGlass(v);};
+function voxelTacoma(lx,wz,hy){
+  X=lx;Z=wz;Y=hy;SX=X/37;SZ=Z/13;SY=Y/15;const sm=Math.min(SX,SY,SZ);TH=Math.max(.3,1.05/sm);TB=Math.max(.5,1.05/sm);
+  N=X*Y*Z;vox=new Uint8Array(N);
+  for(let j=0;j<Y;j++)for(let k=0;k<Z;k++)for(let i=0;i<X;i++)vox[id(i,j,k)]=classify((i+.5)/SX,(j+.5)/SY,(k+.5)/SZ);
+  computeExposed();
+}
+
+// ---------- pictures ----------
+function toLab(hex){const n=parseInt(hex.slice(1),16);return rgbLab(n>>16,n>>8&255,n&255);}
+function rgbLab(r,g,b){const f=c=>{c/=255;return c>0.04045?Math.pow((c+0.055)/1.055,2.4):c/12.92;};
+  const R1=f(r),G1=f(g),B1=f(b);
+  let x=(R1*.4124+G1*.3576+B1*.1805)/.95047,y=(R1*.2126+G1*.7152+B1*.0722),z=(R1*.0193+G1*.1192+B1*.9505)/1.08883;
+  const h=t=>t>0.008856?Math.cbrt(t):7.787*t+16/116;x=h(x);y=h(y);z=h(z);return[116*y-16,500*(x-y),200*(y-z)];}
+const PALLAB={};for(const k in PALS)PALLAB[k]=PALS[k].map(v=>[v,...toLab(CAT[v].m)]);
+function nearest(pk,r,g,b){const[L,A,Bb]=rgbLab(r,g,b);let best=0,bd=1e9;for(const[v,l,a,bb]of PALLAB[pk]){const d=(L-l)**2+(A-a)**2+(Bb-bb)**2;if(d<bd){bd=d;best=v;}}return best;}
+const imgCache={};
+function getImg(src){return imgCache[src]||(imgCache[src]=new Promise((res,rej)=>{const im=new Image();im.onload=()=>res(im);im.onerror=()=>rej(new Error('That picture could not be read.'));im.src=src;}));}
+async function voxelPicture(b){
+  const im=await getImg(b.img);const w=b.w,h=Math.max(1,Math.round(w*im.naturalHeight/im.naturalWidth)),t=b.t;
+  const cv=document.createElement('canvas');cv.width=w;cv.height=h;const c=cv.getContext('2d');
+  c.imageSmoothingEnabled=true;c.imageSmoothingQuality='high';c.drawImage(im,0,0,w,h);
+  const d=c.getImageData(0,0,w,h).data,cache=new Map(),bg=[d[0],d[1],d[2]];
+  if(b.orient==='flat'){X=w;Y=t;Z=h;}else{X=w;Y=h;Z=t;}
+  N=X*Y*Z;vox=new Uint8Array(N);
+  for(let r=0;r<h;r++)for(let i=0;i<w;i++){const o=(r*w+i)*4;if(d[o+3]<128)continue;
+    if(b.bg&&Math.abs(d[o]-bg[0])+Math.abs(d[o+1]-bg[1])+Math.abs(d[o+2]-bg[2])<48)continue;
+    const key=(d[o]>>2)<<12|(d[o+1]>>2)<<6|(d[o+2]>>2);let v=cache.get(key);
+    if(v===undefined){v=nearest(b.pal,d[o],d[o+1],d[o+2]);cache.set(key,v);}
+    for(let q=0;q<t;q++){if(b.orient==='flat')vox[id(i,q,r)]=v;else vox[id(i,h-1-r,q)]=v;}}
+  computeExposed();
+}
 
 // ---------- state ----------
 const $=q=>document.getElementById(q);
-const store={get(k,d){try{const v=localStorage.getItem(k);return v===null?d:JSON.parse(v);}catch(e){return d;}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}};
-let L=60, done=[];
-const doneKey=()=>'tacoma-done-'+X+'x'+Z+'x'+Y;
+const store={get(k,d){try{const v=localStorage.getItem(k);return v===null?d:JSON.parse(v);}catch(e){return d;}},
+  set(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true;}catch(e){return false;}}};
+const LIBKEY='mc-builds-v1';
+let lib=store.get(LIBKEY,[]);
+let cur=null, codeOf={}, L=1, done=[], rowsDone=new Set();
+const buildKey=()=>cur.id+':'+X+'x'+Z+'x'+Y;
 $('hollow').checked=store.get('tacoma4-hollow',true);
 const keep=n=>!$('hollow').checked||exposed[n];
+const nameOf=v=>CAT[v].name;
 function counts(j){const c={};const j0=j===undefined?0:j,j1=j===undefined?Y-1:j;
-  for(let jj=j0;jj<=j1;jj++)for(let k=0;k<Z;k++)for(let i=0;i<X;i++){const n=id(i,jj,k),v=vox[n];if(v&&keep(n))c[CODES[v]]=(c[CODES[v]]||0)+1;}
+  for(let jj=j0;jj<=j1;jj++)for(let k=0;k<Z;k++)for(let i=0;i<X;i++){const n=id(i,jj,k),v=vox[n];if(v&&keep(n))c[v]=(c[v]||0)+1;}
   return c;}
 const stacks=n=>{const s=Math.floor(n/64),r=n%64;return s?(s+' + '+r):String(r);};
 function lum(hex){const n=parseInt(hex.slice(1),16);return(0.299*(n>>16)+0.587*(n>>8&255)+0.114*(n&255))/255;}
+const ink=c=>lum(c)<.5?'#fff':'#111';
+function assignCodes(){
+  if(cur.kind==='tacoma'){codeOf=TACODE;return;}
+  const c=counts();codeOf={};const seq='ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  Object.keys(c).sort((a,b)=>c[b]-c[a]).forEach((v,n)=>codeOf[v]=n<26?seq[n]:seq[Math.floor(n/26)-1]+seq[n%26]);
+}
 
 const NOTES=[[3.4,'Tires and rims: tread grooves, 8 black spokes, silver lip ring and chrome center cap.'],
   [4.1,'Axles, differentials, driveshaft and the feet of the bull bar.'],
@@ -360,62 +493,101 @@ const NOTES=[[3.4,'Tires and rims: tread grooves, 8 black spokes, silver lip rin
   [10.7,'Hood, hood scoop, belt line, hard bed cover, dashboard and steering wheel.'],
   [14.6,'Windshield and windows. Pillars between the front and rear doors. Headrests show through the glass.'],
   [99,'Curved roof.']];
-const noteFor=l=>{const y=(l-.5)/SY;return NOTES.find(n=>y<n[0])[1];};
+function noteFor(l){
+  if(cur.kind==='tacoma'){const y=(l-.5)/SY;return NOTES.find(n=>y<n[0])[1];}
+  if(cur.orient==='flat')return `Lying flat. Layer ${l} of ${Y} thick.`;
+  return `Picture row ${Y-l+1} from the top, built from the ground up.`+(Z>1?` Every row is ${Z} blocks deep.`:'');
+}
+
+// ---------- starting block ----------
+const DIR={E:[1,0],W:[-1,0],S:[0,1],N:[0,-1]};
+let anchor=null;
+function perp(c){return(c==='E'||c==='W')?['S','N']:['E','W'];}
+const DLABEL={E:'East (+X)',W:'West (−X)',S:'South (+Z)',N:'North (−Z)'};
+function fillRowSel(sel){const o=perp($('acol').value);$('arow').innerHTML=o.map(d=>`<option value="${d}">${DLABEL[d]}</option>`).join('');if(sel&&o.includes(sel))$('arow').value=sel;}
+function loadAnchor(){
+  const a=store.get('anchor-'+cur.id,null);anchor=a;
+  $('ax').value=a?a.x:'';$('ay').value=a?a.y:'';$('az').value=a?a.z:'';
+  $('acol').value=a?a.c:'E';fillRowSel(a?a.r:null);
+  $('anchornote').textContent=cur.kind==='tacoma'
+    ?'Everything is measured from col 1, row 1, layer 1: the front, passenger-side corner of the truck, on the ground (the red post in the 3D view). Stand on that spot in the game, turn on Show Coordinates, and type the numbers here.'
+    :'Everything is measured from col 1, row 1, layer 1: the bottom-left corner of the picture (the red post in the 3D view). Stand on that spot in the game, turn on Show Coordinates, and type the numbers here.';
+  showAnchorInfo();
+}
+function readAnchor(){
+  const x=parseInt($('ax').value,10),y=parseInt($('ay').value,10),z=parseInt($('az').value,10);
+  anchor=(isNaN(x)||isNaN(y)||isNaN(z))?null:{x,y,z,c:$('acol').value,r:$('arow').value};
+  store.set('anchor-'+cur.id,anchor);showAnchorInfo();renderRuns();
+}
+function world(i,j,k){if(!anchor)return null;const c=DIR[anchor.c],r=DIR[anchor.r];
+  return{x:anchor.x+i*c[0]+k*r[0],y:anchor.y+j,z:anchor.z+i*c[1]+k*r[1]};}
+function showAnchorInfo(){
+  if(!anchor){$('anchorinfo').textContent='Fill in X, Y and Z to see in-game coordinates on every row.';return;}
+  const e=world(X-1,0,Z-1);
+  $('anchorinfo').textContent=`Starting block at ${anchor.x} ${anchor.y} ${anchor.z}. The far corner lands at ${e.x} ${anchor.y} ${e.z}; the top layer is at Y ${anchor.y+Y-1}.`;
+}
+function runXYZ(j,k,s,e){const a=world(s,j,k);if(!a)return'';const b=world(e,j,k);
+  return s===e?`${a.x} ${a.y} ${a.z}`:`${a.x} ${a.y} ${a.z} → ${b.x} ${b.y} ${b.z}`;}
+['ax','ay','az'].forEach(q=>$(q).addEventListener('input',readAnchor));
+$('acol').onchange=()=>{fillRowSel($('arow').value);readAnchor();};
+$('arow').onchange=readAnchor;
+$('aclear').onclick=()=>{$('ax').value=$('ay').value=$('az').value='';readAnchor();};
 
 // ---------- 3D view ----------
-let renderer,scene,camera,controls,meshes={},ghostMesh,frame,mat4,col;
+let renderer,scene,camera,controls,meshes={},ghostMesh,frame,mat4,col,dyn=[];
 function init3d(){
   if(!window.THREE){$('loading').textContent='The 3D viewer could not load (three.js is blocked). The layer plan below still works.';return;}
   try{renderer=new THREE.WebGLRenderer({canvas:$('cv3'),antialias:true,alpha:true});}
   catch(e){$('loading').textContent='This browser has WebGL turned off, so the 3D view is unavailable. The layer plan below still works.';return;}
   $('loading').hidden=true;
   renderer.setPixelRatio(Math.min(2,window.devicePixelRatio||1));
-  scene=new THREE.Scene();
-  camera=new THREE.PerspectiveCamera(30,1,1,4000);
+  scene=new THREE.Scene();camera=new THREE.PerspectiveCamera(30,1,1,6000);
   scene.add(new THREE.HemisphereLight(0xffffff,0x555a60,1.0));
   const sun=new THREE.DirectionalLight(0xffffff,0.75);sun.position.set(-1,2.2,1.3);scene.add(sun);
-  const ground=new THREE.Mesh(new THREE.PlaneGeometry(420,320),new THREE.MeshBasicMaterial({color:0x000000,transparent:true,opacity:.08}));
+  const ground=new THREE.Mesh(new THREE.PlaneGeometry(700,700),new THREE.MeshBasicMaterial({color:0x000000,transparent:true,opacity:.08}));
   ground.rotation.x=-Math.PI/2;ground.position.y=-0.05;scene.add(ground);
-  controls=new THREE.OrbitControls(camera,$('cv3'));controls.enableDamping=false;
-  controls.addEventListener('change',render);
+  controls=new THREE.OrbitControls(camera,$('cv3'));controls.enableDamping=false;controls.addEventListener('change',render);
   new ResizeObserver(resize).observe($('stage'));
   mat4=new THREE.Matrix4();col=new THREE.Color();
 }
-let dyn=[];
 function buildMeshes(){
   if(!renderer)return;
   for(const o of dyn){scene.remove(o);o.geometry.dispose();o.material.dispose();}
   dyn=[];meshes={};
-  const box=new THREE.BoxGeometry(1,1,1);
-  const totals={};for(let n=0;n<N;n++)if(vox[n])totals[vox[n]]=(totals[vox[n]]||0)+1;
-  for(const v in totals){const bl=BLOCKS[CODES[v]];
+  const box=new THREE.BoxGeometry(1,1,1);const totals={};let ex=0;
+  for(let n=0;n<N;n++)if(vox[n]){totals[vox[n]]=(totals[vox[n]]||0)+1;if(exposed[n])ex++;}
+  for(const v in totals){const bl=CAT[v];
     const m=new THREE.MeshLambertMaterial({color:0xffffff,transparent:!!bl.glass,opacity:bl.glass||1,depthWrite:!bl.glass});
     const mesh=new THREE.InstancedMesh(box,m,totals[v]);mesh.count=0;mesh.frustumCulled=false;
     mesh.instanceColor=new THREE.InstancedBufferAttribute(new Float32Array(totals[v]*3),3);
     if(bl.glass)mesh.renderOrder=2;meshes[v]=mesh;scene.add(mesh);dyn.push(mesh);}
-  let ex=0;for(let n=0;n<N;n++)if(exposed[n])ex++;
-  ghostMesh=new THREE.InstancedMesh(box,new THREE.MeshBasicMaterial({color:0x2a2e34,transparent:true,opacity:.07,depthWrite:false}),ex);
+  ghostMesh=new THREE.InstancedMesh(box,new THREE.MeshBasicMaterial({color:0x2a2e34,transparent:true,opacity:.07,depthWrite:false}),Math.max(1,ex));
   ghostMesh.count=0;ghostMesh.frustumCulled=false;ghostMesh.renderOrder=3;scene.add(ghostMesh);dyn.push(ghostMesh);
   const fg=new THREE.BufferGeometry().setFromPoints([[-1,-1],[X+1,-1],[X+1,Z+1],[-1,Z+1]].map(([a,b])=>new THREE.Vector3(a-X/2,0,b-Z/2)));
   frame=new THREE.LineLoop(fg,new THREE.LineBasicMaterial({color:0xf1b419}));scene.add(frame);dyn.push(frame);
-  controls.target.set(0,Y*0.42,0);setView('front');resize();
+  const ph=Math.max(3,Math.round(Math.max(X,Y,Z)*0.12));
+  const post=new THREE.Mesh(new THREE.BoxGeometry(1.02,ph,1.02),new THREE.MeshBasicMaterial({color:0xd8322c}));
+  post.position.set(0.5-X/2,ph/2,0.5-Z/2);scene.add(post);dyn.push(post);
+  controls.target.set(0,Y*0.45,0);setView('front');resize();
 }
-function setView(v){if(!camera)return;const d=X*1.55,dir=new THREE.Vector3();
-  if(v==='front')dir.set(-0.72,0.42,0.6).normalize();
-  if(v==='rear')dir.set(0.75,0.45,-0.55).normalize();
-  if(v==='side')dir.set(0,0.12,1).normalize();
-  if(v==='top')dir.set(0.001,1,0.12).normalize();
-  camera.position.copy(controls.target).addScaledVector(dir,d);camera.lookAt(controls.target);controls.update();render();}
-function resize(){if(!renderer)return;const r=$('stage').getBoundingClientRect();renderer.setSize(r.width,r.height,false);camera.aspect=r.width/r.height;camera.updateProjectionMatrix();render();}
+function setView(v){if(!camera)return;const d=Math.max(X,Y*1.4,Z)*1.6,dir=new THREE.Vector3();
+  const pic=cur&&cur.kind==='picture';
+  if(v==='front')pic?dir.set(0.15,0.2,1):dir.set(-0.72,0.42,0.6);
+  if(v==='rear')pic?dir.set(-0.15,0.2,-1):dir.set(0.75,0.45,-0.55);
+  if(v==='side')pic?dir.set(1,0.2,0.1):dir.set(0,0.12,1);
+  if(v==='top')dir.set(0.001,1,0.12);
+  if(pic&&cur.orient==='flat'&&v==='front')dir.set(0.001,1,0.5);
+  dir.normalize();camera.position.copy(controls.target).addScaledVector(dir,d);camera.lookAt(controls.target);controls.update();render();}
+function resize(){if(!renderer)return;const r=$('stage').getBoundingClientRect();if(!r.width)return;renderer.setSize(r.width,r.height,false);camera.aspect=r.width/r.height;camera.updateProjectionMatrix();render();}
 function render(){if(renderer)renderer.render(scene,camera);}
 function hash(n){n=(n^61)^(n>>>16);n=n+(n<<3);n=n^(n>>>4);n=Math.imul(n,0x27d4eb2d);return((n^(n>>>15))>>>0)/4294967296;}
 function update3d(){
   if(!renderer||!ghostMesh)return;
   const fill={};for(const v in meshes)fill[v]=0;let g=0;const ghost=$('ghost').checked;
   for(let j=0;j<Y;j++)for(let k=0;k<Z;k++)for(let i=0;i<X;i++){const n=id(i,j,k),v=vox[n];if(!v)continue;
-    if(j<L){if(!keep(n))continue; if(!exposed[n]&&j!==L-1)continue;
+    if(j<L){if(!keep(n))continue;if(!exposed[n]&&j!==L-1)continue;
       const m=meshes[v];mat4.makeTranslation(i-X/2+.5,j+.5,k-Z/2+.5);m.setMatrixAt(fill[v],mat4);
-      col.set(BLOCKS[CODES[v]].c);const s=0.9+hash(n)*0.2;col.r*=s;col.g*=s;col.b*=s;m.setColorAt(fill[v],col);fill[v]++;}
+      col.set(CAT[v].c);const s=0.9+hash(n)*0.2;col.r*=s;col.g*=s;col.b*=s;m.setColorAt(fill[v],col);fill[v]++;}
     else if(ghost&&exposed[n]){mat4.makeTranslation(i-X/2+.5,j+.5,k-Z/2+.5);ghostMesh.setMatrixAt(g++,mat4);}}
   for(const v in meshes){const m=meshes[v];m.count=fill[v];m.instanceMatrix.needsUpdate=true;if(m.instanceColor)m.instanceColor.needsUpdate=true;}
   ghostMesh.count=g;ghostMesh.instanceMatrix.needsUpdate=true;
@@ -426,59 +598,64 @@ document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>setView(b.data
 // ---------- layer grid ----------
 const gc=$('grid'),g2=gc.getContext('2d');const LAB=28;let CS=0,fitCS=6;
 function css(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim();}
-function computeFit(){const bw=$('gridbox').clientWidth;fitCS=Math.max(3,Math.floor((bw-LAB-4)/X));if(!CS)CS=fitCS;}
+function computeFit(){const bw=$('gridbox').clientWidth;fitCS=Math.max(3,Math.min(24,Math.floor((bw-LAB-4)/X)));if(!CS)CS=fitCS;}
 function drawGrid(){
-  if(!vox)return;
-  computeFit();
+  if(!vox)return;computeFit();
   const dpr=window.devicePixelRatio||1,Wd=LAB+X*CS+2,Hd=LAB+Z*CS+22;
   gc.width=Wd*dpr;gc.height=Hd*dpr;gc.style.width=Wd+'px';gc.style.height=Hd+'px';g2.setTransform(dpr,0,0,dpr,0,0);
   const fg=css('--fg'),muted=css('--muted'),line=css('--line'),cell=css('--cell'),panel=css('--panel');
   g2.fillStyle=cell;g2.fillRect(0,0,Wd,Hd);g2.fillStyle=panel;g2.fillRect(LAB,LAB,X*CS,Z*CS);
   const j=L-1,below=$('below').checked;
   for(let k=0;k<Z;k++)for(let i=0;i<X;i++){const px=LAB+i*CS,py=LAB+k*CS,n=id(i,j,k),v=vox[n];
-    if(v&&keep(n)){const c=BLOCKS[CODES[v]].c;g2.fillStyle=c;g2.fillRect(px,py,CS,CS);
-      if(CS>=15){g2.fillStyle=lum(c)<.5?'rgba(255,255,255,.8)':'rgba(0,0,0,.72)';g2.font='600 '+Math.min(11,CS-6)+'px "IBM Plex Mono", monospace';g2.textAlign='center';g2.textBaseline='middle';g2.fillText(CODES[v],px+CS/2,py+CS/2+.5);}}
-    else if(below&&j>0){const nb=id(i,j-1,k),vb=vox[nb];if(vb&&keep(nb)){g2.fillStyle=BLOCKS[CODES[vb]].c;g2.globalAlpha=.2;g2.fillRect(px+CS*.2,py+CS*.2,CS*.6,CS*.6);g2.globalAlpha=1;}}}
-  // grid lines: fine every block when zoomed, heavy every 10
+    if(v&&keep(n)){const c=CAT[v].c;g2.fillStyle=c;g2.fillRect(px,py,CS,CS);
+      if(CS>=15){g2.fillStyle=lum(c)<.5?'rgba(255,255,255,.8)':'rgba(0,0,0,.72)';g2.font='600 '+Math.min(11,CS-6)+'px "IBM Plex Mono", monospace';g2.textAlign='center';g2.textBaseline='middle';g2.fillText(codeOf[v],px+CS/2,py+CS/2+.5);}}
+    else if(below&&j>0){const nb=id(i,j-1,k),vb=vox[nb];if(vb&&keep(nb)){g2.fillStyle=CAT[vb].c;g2.globalAlpha=.2;g2.fillRect(px+CS*.2,py+CS*.2,CS*.6,CS*.6);g2.globalAlpha=1;}}}
   for(let i=0;i<=X;i++){const heavy=i%10===0;if(!heavy&&CS<7)continue;g2.strokeStyle=heavy?muted:line;g2.globalAlpha=heavy?.55:1;g2.beginPath();g2.moveTo(LAB+i*CS+.5,LAB);g2.lineTo(LAB+i*CS+.5,LAB+Z*CS);g2.stroke();}
   for(let k=0;k<=Z;k++){const heavy=k%10===0;if(!heavy&&CS<7)continue;g2.strokeStyle=heavy?muted:line;g2.globalAlpha=heavy?.55:1;g2.beginPath();g2.moveTo(LAB,LAB+k*CS+.5);g2.lineTo(LAB+X*CS,LAB+k*CS+.5);g2.stroke();}
-  g2.globalAlpha=1;g2.fillStyle=muted;g2.font='600 10px "IBM Plex Mono", monospace';g2.textBaseline='middle';
+  g2.globalAlpha=1;
+  // starting block
+  g2.strokeStyle='#d8322c';g2.lineWidth=j===0?3:1.5;g2.strokeRect(LAB+1.5,LAB+1.5,CS-3,CS-3);g2.lineWidth=1;
+  g2.fillStyle=muted;g2.font='600 10px "IBM Plex Mono", monospace';g2.textBaseline='middle';
   g2.textAlign='left';for(let i=0;i<X;i+=10)g2.fillText(i+1,LAB+i*CS+2,LAB/2);
   g2.textAlign='right';for(let k=0;k<Z;k+=10)g2.fillText(k+1,LAB-4,LAB+k*CS+CS/2);
-  g2.fillStyle=fg;g2.font='600 11px "IBM Plex Sans", sans-serif';g2.textAlign='left';g2.fillText('◀ FRONT',LAB,LAB+Z*CS+12);
-  g2.textAlign='right';g2.fillText('REAR ▶',LAB+X*CS,LAB+Z*CS+12);
-  g2.textAlign='center';g2.fillStyle=muted;g2.fillText('row 1 = passenger side · row '+Z+' = driver side',LAB+X*CS/2,LAB+Z*CS+12);
+  g2.fillStyle=fg;g2.font='600 11px "IBM Plex Sans", sans-serif';
+  const pic=cur.kind==='picture';
+  g2.textAlign='left';g2.fillText(pic?'◀ col 1':'◀ FRONT',LAB,LAB+Z*CS+12);
+  g2.textAlign='right';g2.fillText(pic?'col '+X+' ▶':'REAR ▶',LAB+X*CS,LAB+Z*CS+12);
+  if(!pic&&X*CS>420){g2.textAlign='center';g2.fillStyle=muted;g2.fillText('row 1 = passenger side · row '+Z+' = driver side',LAB+X*CS/2,LAB+Z*CS+12);}
 }
 function showCell(e){const r=gc.getBoundingClientRect();const i=Math.floor((e.clientX-r.left-LAB)/CS),k=Math.floor((e.clientY-r.top-LAB)/CS);
-  if(i<0||i>=X||k<0||k>=Z)return;const n=id(i,L-1,k),v=vox[n];
-  $('cellinfo').textContent=`Layer ${L} · col ${i+1} · row ${k+1} · `+(v?(keep(n)?BLOCKS[CODES[v]].name:BLOCKS[CODES[v]].name+' (hidden, skipped)'):'air');}
+  if(i<0||i>=X||k<0||k>=Z)return;const n=id(i,L-1,k),v=vox[n];const w=world(i,L-1,k);
+  $('cellinfo').textContent=`Layer ${L} · col ${i+1} · row ${k+1}`+(w?` · game ${w.x} ${w.y} ${w.z}`:'')+' · '+(v?(keep(n)?nameOf(v):nameOf(v)+' (hidden, skipped)'):'air');}
 gc.addEventListener('pointermove',showCell);gc.addEventListener('pointerdown',showCell);
-$('zin').onclick=()=>{CS=Math.min(24,Math.max(CS+1,Math.round(CS*1.5)));drawGrid();};
+$('zin').onclick=()=>{CS=Math.min(28,Math.max(CS+1,Math.round(CS*1.5)));drawGrid();};
 $('zout').onclick=()=>{CS=Math.max(3,Math.round(CS/1.5));drawGrid();};
 $('zfit').onclick=()=>{CS=fitCS;drawGrid();};
 
-// ---------- panels ----------
-function renderRuns(){const ol=$('runs');ol.innerHTML='';const j=L-1;let any=false;
-  for(let k=0;k<Z;k++){const runs=[];let cur=null;
-    for(let i=0;i<X;i++){const n=id(i,j,k),v=vox[n];const b=(v&&keep(n))?CODES[v]:'';
-      if(b&&cur&&cur.b===b&&cur.e===i-1)cur.e=i;else if(b){cur={b,s:i,e:i};runs.push(cur);}else cur=null;}
-    if(!runs.length)continue;any=true;
+// ---------- rows ----------
+function rowRuns(j,k){const runs=[];let c=null;
+  for(let i=0;i<X;i++){const n=id(i,j,k),v=vox[n];const b=(v&&keep(n))?v:0;
+    if(b&&c&&c.v===b&&c.e===i-1)c.e=i;else if(b){c={v:b,s:i,e:i};runs.push(c);}else c=null;}
+  return runs;}
+function renderRuns(){if(!vox)return;const ol=$('runs');ol.innerHTML='';const j=L-1;let any=false;
+  for(let k=0;k<Z;k++){const runs=rowRuns(j,k);if(!runs.length)continue;any=true;
     const li=document.createElement('li');
-    li.innerHTML=`<span class="rn">Row ${k+1}</span><span class="rs">`+runs.map(r=>{const bl=BLOCKS[r.b],len=r.e-r.s+1;
-      return `<span class="r1" title="${bl.name}"><i style="background:${bl.c}"></i>${r.s===r.e?'col '+(r.s+1):'cols '+(r.s+1)+'–'+(r.e+1)} ${r.b}×${len}</span>`;}).join('')+'</span>';
+    li.innerHTML=`<span class="rn">Row ${k+1}</span><span class="rs">`+runs.map(r=>{const bl=CAT[r.v],len=r.e-r.s+1,xyz=runXYZ(j,k,r.s,r.e);
+      return `<span class="r1" title="${bl.name}${xyz?' · '+xyz:''}"><i style="background:${bl.c}"></i>${r.s===r.e?'col '+(r.s+1):'cols '+(r.s+1)+'–'+(r.e+1)} ${codeOf[r.v]}×${len}</span>`;}).join('')+'</span>';
     ol.appendChild(li);}
   if(!any)ol.innerHTML='<li>Nothing to place on this layer.</li>';}
+
+// ---------- panels ----------
 function renderLegend(){const c=counts(L-1),ul=$('legend');ul.innerHTML='';
-  const ks=Object.keys(c).sort((a,b)=>c[b]-c[a]);
-  for(const b of ks){const bl=BLOCKS[b],li=document.createElement('li');
-    li.innerHTML=`<span class="sw" style="background:${bl.c};color:${lum(bl.c)<.5?'#fff':'#111'}">${b}</span><span>${bl.name}</span><span class="n">${c[b]}</span>`;ul.appendChild(li);}}
+  for(const v of Object.keys(c).sort((a,b)=>c[b]-c[a])){const bl=CAT[v],li=document.createElement('li');
+    li.innerHTML=`<span class="sw" style="background:${bl.c};color:${ink(bl.c)}">${codeOf[v]}</span><span>${bl.name}</span><span class="n">${c[v]}</span>`;ul.appendChild(li);}}
 function renderMats(){const c=counts(),tb=$('mats');tb.innerHTML='';
-  for(const b of Object.keys(c).sort((a,b)=>c[b]-c[a])){const bl=BLOCKS[b],tr=document.createElement('tr');
-    tr.innerHTML=`<td><span class="row" style="flex-wrap:nowrap"><span class="sw" style="background:${bl.c};color:${lum(bl.c)<.5?'#fff':'#111'}">${b}</span>${bl.name}</span></td><td>${bl.use}</td><td class="num">${c[b].toLocaleString()}</td><td class="num">${stacks(c[b])}</td><td class="num">${(c[b]/1728).toFixed(1)}</td>`;tb.appendChild(tr);}
+  for(const v of Object.keys(c).sort((a,b)=>c[b]-c[a])){const bl=CAT[v],tr=document.createElement('tr');
+    tr.innerHTML=`<td><span class="row" style="flex-wrap:nowrap"><span class="sw" style="background:${bl.c};color:${ink(bl.c)}">${codeOf[v]}</span>${bl.name}</span></td><td>${cur.kind==='tacoma'?(bl.use||''):'Picture'}</td><td class="num">${c[v].toLocaleString()}</td><td class="num">${stacks(c[v])}</td>`;tb.appendChild(tr);}
   const total=Object.values(c).reduce((a,b)=>a+b,0);
-  $('chips').innerHTML=`<span class="chip"><b>${X}</b> long</span><span class="chip"><b>${Z}</b> wide</span><span class="chip"><b>${Y}</b> layers</span><span class="chip"><b>${total.toLocaleString()}</b> blocks</span>`;}
-function renderLayers(){const box=$('layers');box.innerHTML='';
-  for(let i=1;i<=Y;i++){const b=document.createElement('button');b.textContent=i;if(i===L)b.className='cur';if(done.includes(i))b.classList.add('ok');
+  $('chips').innerHTML=`<span class="chip"><b>${X}</b> long</span><span class="chip"><b>${Z}</b> ${cur.kind==='picture'&&cur.orient!=='flat'?'deep':'wide'}</span><span class="chip"><b>${Y}</b> layers</span><span class="chip"><b>${total.toLocaleString()}</b> blocks</span>`;}
+function renderLayers(){const box=$('layers');box.innerHTML='';box.hidden=Y>120;
+  if(Y<=120)for(let i=1;i<=Y;i++){const b=document.createElement('button');b.textContent=i;if(i===L)b.className='cur';if(done.includes(i))b.classList.add('ok');
     b.setAttribute('aria-label','Layer '+i+(done.includes(i)?', finished':''));b.onclick=()=>setL(i);box.appendChild(b);}
   $('isdone').checked=done.includes(L);$('progtxt').textContent=done.length+' / '+Y;$('progbar').style.width=(done.length/Y*100)+'%';}
 let raf=0;
@@ -488,24 +665,141 @@ function setL(n){L=Math.max(1,Math.min(Y,n));$('slider').value=L;$('lnum').inner
 $('prev').onclick=()=>setL(L-1);$('next').onclick=()=>setL(L+1);
 $('slider').oninput=e=>setL(+e.target.value);
 $('ghost').onchange=update3d;$('below').onchange=drawGrid;
-$('hollow').onchange=()=>{store.set('tacoma4-hollow',$('hollow').checked);renderMats();setL(L);};
-$('isdone').onchange=e=>{done=done.filter(i=>i!==L);if(e.target.checked)done.push(L);store.set(doneKey(),done);renderLayers();};
-document.addEventListener('keydown',e=>{if(e.target.tagName==='INPUT'&&e.target.type==='range')return;if(e.key==='ArrowRight')setL(L+1);if(e.key==='ArrowLeft')setL(L-1);});
-matchMedia('(prefers-color-scheme: dark)').addEventListener('change',drawGrid);
+$('hollow').onchange=()=>{store.set('tacoma4-hollow',$('hollow').checked);assignCodes();renderMats();setL(L);};
+$('isdone').onchange=e=>{done=done.filter(i=>i!==L);if(e.target.checked)done.push(L);store.set('done-'+buildKey(),done);renderLayers();};
+document.addEventListener('keydown',e=>{
+  if(!$('tv').hidden){if(e.key==='ArrowRight'||e.key==='Enter'){e.preventDefault();tvStep(1,true);}else if(e.key==='ArrowLeft'){e.preventDefault();tvStep(-1,false);}else if(e.key==='Escape')tvClose();return;}
+  if(e.target.tagName==='INPUT'||e.target.tagName==='SELECT')return;if(e.key==='ArrowRight')setL(L+1);if(e.key==='ArrowLeft')setL(L-1);});
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{drawGrid();if(!$('tv').hidden)tvDraw();});
 new MutationObserver(drawGrid).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
 new ResizeObserver(()=>{const f=fitCS;computeFit();if(CS===f)CS=fitCS;drawGrid();}).observe($('gridbox'));
-function rebuild(lx,wz,hy){
-  $('sizeinfo').textContent='Building…';
-  setTimeout(()=>{
-    voxelize(lx,wz,hy);done=store.get(doneKey(),[]);CS=0;
-    $('slider').max=Y;$('fp').textContent=X+' × '+Z;
-    const tire=Math.round(7*SY);
-    $('scaletip').textContent=`About ${(518/X).toFixed(1)} cm (${(204/X).toFixed(1)} in) per block. The truck stands ${Y} blocks tall on ${tire}-block tires.`;
-    buildMeshes();renderMats();setL(Y);
-    $('sizeinfo').textContent=`${X} long × ${Z} wide × ${Y} tall. Full blocks only, no stairs or slabs.`;
-    store.set('tacoma-size2',[X,Z,Y]);
-  },20);
+
+// ---------- TV build mode ----------
+let tvRows=[],tvI=0;
+function tvList(){tvRows=[];for(let j=0;j<Y;j++)for(let k=0;k<Z;k++)if(rowRuns(j,k).length)tvRows.push([j,k]);}
+function tvOpen(){
+  tvList();if(!tvRows.length)return;
+  const start=tvRows.findIndex(([j,k])=>!rowsDone.has(j+':'+k));
+  tvI=Math.max(0,start);$('tv').hidden=false;document.body.style.overflow='hidden';
+  try{const p=document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen();if(p&&p.catch)p.catch(()=>{});}catch(e){}
+  tvDraw();$('tvnext').focus();
 }
+function tvClose(){$('tv').hidden=true;document.body.style.overflow='';
+  try{if(document.fullscreenElement)document.exitFullscreen().catch(()=>{});}catch(e){}
+  const [j]=tvRows[tvI]||[L-1];setL(j+1);}
+function tvStep(d,markDone){
+  const [j,k]=tvRows[tvI];
+  if(markDone){rowsDone.add(j+':'+k);store.set('rows-'+buildKey(),[...rowsDone]);
+    const allDone=tvRows.filter(r=>r[0]===j).every(([jj,kk])=>rowsDone.has(jj+':'+kk));
+    if(allDone&&!done.includes(j+1)){done.push(j+1);store.set('done-'+buildKey(),done);}}
+  tvI=Math.max(0,Math.min(tvRows.length-1,tvI+d));tvDraw();}
+function tvDraw(){
+  const [j,k]=tvRows[tvI],runs=rowRuns(j,k);
+  const nDone=tvRows.filter(([a,b])=>rowsDone.has(a+':'+b)).length;
+  $('tvname').textContent=cur.name;
+  $('tvwhere').textContent=`Layer ${j+1} / ${Y} · Row ${k+1} / ${Z}`+(rowsDone.has(j+':'+k)?' ✓':'');
+  $('tvprog').textContent=`${nDone} of ${tvRows.length} rows done`;
+  // the row, cropped to where blocks are
+  const s0=Math.max(0,runs[0].s-1),e0=Math.min(X-1,runs[runs.length-1].e+1),span=e0-s0+1;
+  const avail=Math.min(window.innerWidth,1800)-60,cs=Math.max(10,Math.min(64,Math.floor(avail/span)));
+  const cv=$('tvrow'),c=cv.getContext('2d'),dpr=window.devicePixelRatio||1,Wd=span*cs,Hd=cs+24;
+  cv.width=Wd*dpr;cv.height=Hd*dpr;cv.style.width=Wd+'px';cv.style.height=Hd+'px';c.setTransform(dpr,0,0,dpr,0,0);
+  c.fillStyle=css('--panel');c.fillRect(0,0,Wd,Hd);
+  for(let i=s0;i<=e0;i++){const n=id(i,j,k),v=vox[n],px=(i-s0)*cs;
+    c.strokeStyle=css('--line');c.strokeRect(px+.5,20.5,cs-1,cs-1);
+    if(v&&keep(n)){c.fillStyle=CAT[v].c;c.fillRect(px+1,21,cs-2,cs-2);
+      if(cs>=18){c.fillStyle=lum(CAT[v].c)<.5?'rgba(255,255,255,.85)':'rgba(0,0,0,.75)';c.font='600 '+Math.min(18,cs*.45)+'px "IBM Plex Mono", monospace';c.textAlign='center';c.textBaseline='middle';c.fillText(codeOf[v],px+cs/2,21+cs/2);}}
+  }
+  c.fillStyle=css('--muted');c.font='600 12px "IBM Plex Mono", monospace';c.textAlign='left';c.textBaseline='top';
+  for(const r of runs)c.fillText(r.s+1,(r.s-s0)*cs+2,2);
+  $('tvruns').innerHTML=runs.map(r=>{const bl=CAT[r.v],len=r.e-r.s+1,xyz=runXYZ(j,k,r.s,r.e);
+    return `<li><i style="background:${bl.c}"></i><span class="ct">${r.s===r.e?'col '+(r.s+1):'cols '+(r.s+1)+'–'+(r.e+1)}</span><span><b>${len}</b> × ${bl.name}</span>${xyz?`<span class="xyz">${xyz}</span>`:''}</li>`;}).join('');
+  // layer map
+  const mc=$('tvmap'),m=mc.getContext('2d'),ms=Math.max(2,Math.min(8,Math.floor(Math.min(520,window.innerWidth-40)/X))),MW=X*ms,MH=Z*ms;
+  mc.width=MW*dpr;mc.height=MH*dpr;mc.style.width=MW+'px';mc.style.height=MH+'px';m.setTransform(dpr,0,0,dpr,0,0);
+  m.fillStyle=css('--panel');m.fillRect(0,0,MW,MH);
+  for(let kk=0;kk<Z;kk++){const dn=rowsDone.has(j+':'+kk);for(let i=0;i<X;i++){const n=id(i,j,kk),v=vox[n];if(v&&keep(n)){m.globalAlpha=dn?.35:1;m.fillStyle=CAT[v].c;m.fillRect(i*ms,kk*ms,ms,ms);}}}
+  m.globalAlpha=1;m.strokeStyle='#f1b419';m.lineWidth=2;m.strokeRect(1,k*ms-1,MW-2,ms+2);
+  $('tvback').disabled=tvI===0;
+  $('tvnext').textContent=tvI===tvRows.length-1?'Done ✓':'Done, next row ▶';
+}
+$('tvopen').onclick=tvOpen;$('tvexit').onclick=tvClose;
+$('tvnext').onclick=()=>tvStep(1,true);$('tvback').onclick=()=>tvStep(-1,false);$('tvskip').onclick=()=>tvStep(1,false);
+
+// ---------- library ----------
+function saveLib(){if(!store.set(LIBKEY,lib)){$('libinfo').textContent='This browser would not save it (storage full or blocked). It stays until you close the page; delete a build to make room.';return false;}$('libinfo').textContent='Saved in this browser.';return true;}
+function renderShelf(){
+  const sh=$('shelf');sh.innerHTML='';
+  const card=(bid,name,thumb)=>{const b=document.createElement('button');b.className='bcard'+(cur&&cur.id===bid?' cur':'');
+    b.innerHTML=`<div class="th"${thumb?` style="background-image:url('${thumb}')"`:''}>${thumb?'':'TACOMA'}</div><span>${name}</span>`;
+    b.onclick=()=>openBuild(bid);sh.appendChild(b);};
+  card('tacoma','Lifted Tacoma',null);
+  for(const b of lib)card(b.id,b.name.replace(/[<>&"]/g,''),b.img);
+  const add=document.createElement('label');add.className='bcard add';
+  add.innerHTML='<div class="th">+</div><span>From a picture</span><input type="file" id="upload" accept="image/*">';
+  sh.appendChild(add);
+  add.querySelector('input').onchange=onUpload;
+}
+async function onUpload(e){
+  const f=e.target.files[0];e.target.value='';if(!f)return;
+  $('libinfo').textContent='Reading the picture…';
+  try{
+    const url=await new Promise((res,rej)=>{const fr=new FileReader();fr.onload=()=>res(fr.result);fr.onerror=()=>rej(new Error('That file could not be read.'));fr.readAsDataURL(f);});
+    const im=await getImg(url);const sc=Math.min(1,256/Math.max(im.naturalWidth,im.naturalHeight));
+    const cw=Math.max(1,Math.round(im.naturalWidth*sc)),ch=Math.max(1,Math.round(im.naturalHeight*sc));
+    const cv=document.createElement('canvas');cv.width=cw;cv.height=ch;const c=cv.getContext('2d');c.imageSmoothingQuality='high';c.drawImage(im,0,0,cw,ch);
+    const b={id:'p'+Date.now().toString(36),name:(f.name.replace(/\.[^.]+$/,'')||'Picture').slice(0,40),img:cv.toDataURL('image/png'),w:Math.min(64,cw),t:1,orient:'up',pal:'cw',bg:false};
+    lib.push(b);saveLib();openBuild(b.id);
+  }catch(err){$('libinfo').textContent=err.message+' Try a PNG or JPG.';}
+}
+function setDesc(){
+  if(cur.kind==='tacoma'){$('bname').textContent='Lifted Tacoma';$('bdesc').textContent='Your black double-cab Tacoma with the lift, chrome bull bar with LED light bar, hard bed cover, flared fenders and black off-road wheels, in full blocks at any size you pick.';}
+  else{$('bname').textContent=cur.name;$('bdesc').textContent=`Your picture as ${cur.orient==='flat'?'a floor':'a wall'} of full blocks, ${X} wide × ${cur.orient==='flat'?Z:Y} tall${(cur.orient==='flat'?Y:Z)>1?', '+(cur.orient==='flat'?Y:Z)+' thick':''}.`;}
+}
+function afterLoad(){
+  assignCodes();done=store.get('done-'+buildKey(),[]);rowsDone=new Set(store.get('rows-'+buildKey(),[]));
+  $('slider').max=Y;CS=0;buildMeshes();renderMats();setDesc();renderShelf();loadAnchor();setL(Y);
+}
+function openTacoma(lx,wz,hy){
+  $('sizeinfo').textContent='Building…';
+  setTimeout(()=>{voxelTacoma(lx,wz,hy);afterLoad();
+    $('sizeinfo').textContent=`${X} long × ${Z} wide × ${Y} tall, about ${(518/X).toFixed(1)} cm (${(204/X).toFixed(1)} in) per block. Full blocks only, no stairs or slabs.`;
+    store.set('tacoma-size2',[X,Z,Y]);},20);
+}
+async function openPicture(b){
+  $('picinfo').textContent='Building…';
+  try{await voxelPicture(b);}catch(err){$('picinfo').textContent=err.message;return;}
+  afterLoad();
+  $('picinfo').textContent=`${X} × ${b.orient==='flat'?Z:Y} blocks, ${Object.keys(codeOf).length} block types. Changes rebuild when you let go.`;
+}
+function openBuild(bid){
+  const b=bid==='tacoma'?{id:'tacoma',kind:'tacoma',name:'Lifted Tacoma'}:lib.find(x=>x.id===bid);
+  if(!b)return openBuild('tacoma');
+  cur=b.kind==='tacoma'?b:Object.assign({kind:'picture'},b);store.set('mc-current',bid);
+  $('sizecard').hidden=cur.kind!=='tacoma';$('piccard').hidden=cur.kind!=='picture';
+  resetDel();
+  if(cur.kind==='tacoma'){const s=store.get('tacoma-size2',[102,36,41]);$('sL').value=s[0];$('sW').value=s[1];$('sH').value=s[2];syncLabels();openTacoma(s[0],s[1],s[2]);}
+  else{$('pname').value=cur.name;$('pw').value=cur.w;$('pt').value=cur.t;$('por').value=cur.orient;$('ppal').value=cur.pal;$('pbg').checked=!!cur.bg;
+    getImg(cur.img).then(im=>{$('pw').max=Math.min(256,Math.max(64,im.naturalWidth));picLabels(im);}).catch(()=>{});
+    openPicture(cur);}
+}
+function picLabels(im){$('vPW').textContent=$('pw').value;$('vPT').textContent=$('pt').value;
+  if(im)$('vPH').textContent=Math.max(1,Math.round($('pw').value*im.naturalHeight/im.naturalWidth));}
+function updatePic(field,val){const b=lib.find(x=>x.id===cur.id);if(!b)return;b[field]=val;cur[field]=val;saveLib();}
+$('pw').addEventListener('input',()=>getImg(cur.img).then(picLabels));
+$('pt').addEventListener('input',()=>picLabels());
+$('pw').addEventListener('change',()=>{updatePic('w',+$('pw').value);openPicture(cur);});
+$('pt').addEventListener('change',()=>{updatePic('t',+$('pt').value);openPicture(cur);});
+$('por').onchange=()=>{updatePic('orient',$('por').value);openPicture(cur);};
+$('ppal').onchange=()=>{updatePic('pal',$('ppal').value);openPicture(cur);};
+$('pbg').onchange=()=>{updatePic('bg',$('pbg').checked);openPicture(cur);};
+$('pname').addEventListener('change',()=>{const v=$('pname').value.trim()||'Picture';updatePic('name',v);setDesc();renderShelf();});
+function resetDel(){$('delrow').innerHTML='<button id="del" class="danger">Delete this build</button>';$('del').onclick=askDel;}
+function askDel(){$('delrow').innerHTML='<span>Delete it for good?</span><button id="dely" class="danger">Yes, delete</button><button id="deln">Keep it</button>';
+  $('deln').onclick=resetDel;
+  $('dely').onclick=()=>{lib=lib.filter(x=>x.id!==cur.id);saveLib();openBuild('tacoma');};}
+
+// ---------- Tacoma size sliders ----------
 const BASE={L:37,W:13,H:15};
 function syncLabels(){$('vL').textContent=$('sL').value;$('vW').textContent=$('sW').value;$('vH').textContent=$('sH').value;}
 for(const [sid,dim] of [['sL','L'],['sW','W'],['sH','H']]){
@@ -513,13 +807,12 @@ for(const [sid,dim] of [['sL','L'],['sW','W'],['sH','H']]){
   el.addEventListener('input',()=>{if($('lock').checked){const f=el.value/BASE[dim];
       $('sL').value=Math.round(37*f);$('sW').value=Math.round(13*f);$('sH').value=Math.round(15*f);}
     syncLabels();});
-  el.addEventListener('change',()=>rebuild(+$('sL').value,+$('sW').value,+$('sH').value));
+  el.addEventListener('change',()=>openTacoma(+$('sL').value,+$('sW').value,+$('sH').value));
 }
-$('inch').onclick=()=>{$('lock').checked=true;$('sL').value=102;$('sW').value=36;$('sH').value=41;syncLabels();rebuild(102,36,41);};
+$('inch').onclick=()=>{$('lock').checked=true;$('sL').value=102;$('sW').value=36;$('sH').value=41;syncLabels();openTacoma(102,36,41);};
+
 init3d();
-const saved=store.get('tacoma-size2',[102,36,41]);
-$('sL').value=saved[0];$('sW').value=saved[1];$('sH').value=saved[2];syncLabels();
-rebuild(saved[0],saved[1],saved[2]);
+openBuild(store.get('mc-current','tacoma'));
 document.fonts&&document.fonts.ready.then(drawGrid);
 </script>
 </body>
