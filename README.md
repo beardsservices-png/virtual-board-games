@@ -149,3 +149,23 @@ crowning ends the turn even mid-chain. Red moves first from the bottom.
   sidebar (or the **Board** tab on a phone), and your choices are remembered.
 - Pass & play and vs-computer games are saved in your browser, so closing the
   tab mid-game and coming back later picks up where you left off.
+
+---
+
+## Minecraft build plans
+
+Static pages served alongside the board games (anything in `client/public/` is
+copied into the build as-is):
+
+- **`/minecraft/tacoma.html`**: layer-by-layer plan for Brian's lifted black
+  Tacoma (double cab, chrome tube bull bar with LED light bar, hard bed cover,
+  black 8-spoke rims with silver lip, tube steps, TRD Sport decal). Full blocks
+  only, no stairs or slabs. Size sliders (Plotz-style), a turnable 3D model
+  (three.js from jsDelivr), a block grid per layer, a row-by-row run list for
+  building on a TV, and a shopping list. Default size is 1 block = 2 inches
+  (102 x 36 x 41, about 19,100 blocks hollow).
+
+The truck is drawn as a shape (`classify(x, y, z)` in the page) in units of
+about 14 cm, then sampled at whatever size the sliders ask for, so changes are
+edits to that one function. Brian plays Bedrock on PS5, which cannot import
+structure files, so the plan is for building by hand.
