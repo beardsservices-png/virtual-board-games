@@ -1,0 +1,526 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Lifted Tacoma Build</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@500;700&family=IBM+Plex+Sans:wght@400;600&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: build-sheet workbench — 3D model beside the layer controls, the full-width layer grid under them, materials last */
+:root{
+  --bg:#eceef0; --panel:#ffffff; --line:#d3d7dc; --fg:#1d2126; --muted:#5d656e;
+  --accent:#d99a00; --accent-ink:#1d2126; --stage:#e3e6e9; --cell:#f4f5f6; --good:#2f8a4c;
+  --display:"Pixelify Sans", ui-monospace, monospace;
+  --body:"IBM Plex Sans", system-ui, sans-serif;
+  --mono:"IBM Plex Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#16191d; --panel:#1f2328; --line:#343a42; --fg:#e7eaed; --muted:#9aa3ad;
+  --accent:#f1b419; --accent-ink:#16191d; --stage:#8a9199; --cell:#262b31; --good:#5fc27e; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#16191d; --panel:#1f2328; --line:#343a42; --fg:#e7eaed; --muted:#9aa3ad;
+  --accent:#f1b419; --accent-ink:#16191d; --stage:#8a9199; --cell:#262b31; --good:#5fc27e; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.5;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 40px}
+.wrap{max-width:1320px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+header{display:flex;flex-wrap:wrap;align-items:end;justify-content:space-between;gap:12px}
+h1{font-family:var(--display);font-weight:700;font-size:clamp(28px,4vw,40px);line-height:1;margin:0;text-wrap:balance}
+header p{margin:6px 0 0;color:var(--muted);max-width:62ch}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{font-family:var(--mono);font-size:13px;border:1px solid var(--line);background:var(--panel);padding:4px 10px;border-radius:4px;font-variant-numeric:tabular-nums}
+.chip b{font-weight:600}
+.main{display:grid;grid-template-columns:minmax(0,7fr) minmax(0,5fr);gap:18px;align-items:start}
+@media (max-width:920px){.main{grid-template-columns:minmax(0,1fr)}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:14px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.stage{position:relative;background:var(--stage);border-radius:4px;aspect-ratio:16/10;width:100%;max-width:100%;touch-action:none;cursor:grab;overflow:hidden}
+.stage:active{cursor:grabbing}
+.stage canvas{width:100%;height:100%;display:block}
+.hint{position:absolute;left:10px;bottom:8px;font-size:12px;font-family:var(--mono);color:#2b3036;opacity:.75;pointer-events:none}
+.loading{position:absolute;inset:0;display:grid;place-items:center;font-family:var(--mono);color:#2b3036;font-size:14px;text-align:center;padding:16px}
+.loading[hidden]{display:none}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+button,.toggle{font:inherit;font-size:13px;border:1px solid var(--line);background:var(--cell);color:var(--fg);padding:6px 11px;border-radius:4px;cursor:pointer}
+button:hover{border-color:var(--accent)}
+button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.toggle{display:inline-flex;gap:6px;align-items:center;background:transparent}
+.toggle input{accent-color:var(--accent)}
+.stepper{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.stepper .big{font-family:var(--mono);font-weight:600;font-size:28px;line-height:1;font-variant-numeric:tabular-nums;min-width:6.5ch}
+.stepper .big small{font-size:16px;color:var(--muted)}
+.stepper button{font-size:18px;padding:4px 14px;font-weight:600}
+input[type=range]{flex:1;min-width:140px;accent-color:var(--accent)}
+.note{margin:0;color:var(--fg)}
+.note .y{font-family:var(--mono);font-size:12px;color:var(--muted);display:block}
+.gridhead{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+.gridbox{overflow:auto;max-height:80vh;border:1px solid var(--line);border-radius:4px;background:var(--cell)}
+.gridbox canvas{display:block}
+.cellinfo{font-family:var(--mono);font-size:13px;color:var(--muted);min-height:1.5em}
+.legend{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:6px 14px;margin:0;padding:0;list-style:none}
+.legend li{display:flex;align-items:center;gap:8px;font-size:14px;min-width:0}
+.sw{width:22px;height:22px;border-radius:3px;flex:none;display:grid;place-items:center;font-family:var(--mono);font-size:11px;font-weight:600;border:1px solid rgba(127,127,127,.35)}
+.legend .n{margin-left:auto;font-family:var(--mono);font-variant-numeric:tabular-nums}
+.done{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:10px}
+.prog{flex:1;min-width:120px;height:8px;background:var(--cell);border:1px solid var(--line);border-radius:4px;overflow:hidden}
+.prog i{display:block;height:100%;background:var(--good);width:0}
+h2{font-family:var(--display);font-weight:500;font-size:22px;margin:0}
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line)}
+th{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+td.num{font-family:var(--mono);font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+th.num{text-align:right}
+.tips{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px 22px;margin:0;padding:0;list-style:none}
+.tips li{min-width:0}
+.tips b{display:block;font-size:14px}
+.tips span{color:var(--muted);font-size:14px}
+.sizes{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px 24px}
+.sz{display:flex;flex-direction:column;gap:4px;min-width:0}
+.sz span{font-size:14px;color:var(--muted)}
+.sz b{font-family:var(--mono);color:var(--fg);font-variant-numeric:tabular-nums}
+.sz input{width:100%}
+.runs summary{cursor:pointer;font-weight:600}
+.runs ol{list-style:none;margin:10px 0 0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:6px 22px}
+.runs li{font-size:14px;min-width:0;display:flex;gap:10px;align-items:baseline;border-bottom:1px solid var(--line);padding-bottom:5px}
+.runs .rn{font-family:var(--mono);font-weight:600;flex:none;width:7ch;white-space:nowrap}
+.runs .rs{display:flex;flex-wrap:wrap;gap:4px 10px;min-width:0}
+.runs .r1{display:inline-flex;gap:5px;align-items:center;font-family:var(--mono);font-size:13px;font-variant-numeric:tabular-nums}
+.runs .r1 i{width:12px;height:12px;border-radius:2px;border:1px solid rgba(127,127,127,.4);flex:none}
+.layers{display:grid;grid-template-columns:repeat(auto-fill,minmax(34px,1fr));gap:4px}
+.layers button{font-family:var(--mono);font-size:12px;padding:3px 0}
+.layers button.cur{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.layers button.ok{box-shadow:inset 0 -3px 0 var(--good)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Lifted Tacoma Build</h1>
+      <p>Your black double-cab Tacoma with the lift, chrome bull bar with LED light bar, hard bed cover, flared fenders and black off-road wheels, in full blocks at any size you pick. Step through it one layer at a time, from the tires up to the roof.</p>
+    </div>
+    <div class="chips" id="chips"></div>
+  </header>
+
+  <section class="card" aria-label="Size">
+    <div class="gridhead"><h2>Size</h2>
+      <div class="row"><label class="toggle"><input type="checkbox" id="lock" checked> Keep proportions</label><button id="inch">1 block = 2 inches</button></div></div>
+    <div class="sizes">
+      <label class="sz"><span>Length <b id="vL">102</b></span><input type="range" id="sL" min="40" max="222" value="102"></label>
+      <label class="sz"><span>Width <b id="vW">36</b></span><input type="range" id="sW" min="14" max="78" value="36"></label>
+      <label class="sz"><span>Height <b id="vH">41</b></span><input type="range" id="sH" min="16" max="90" value="41"></label>
+    </div>
+    <div class="cellinfo" id="sizeinfo">Drag a slider and let go to rebuild. Full blocks only, no stairs or slabs.</div>
+  </section>
+
+  <div class="main">
+    <section class="card" aria-label="3D model">
+      <div class="stage" id="stage"><canvas id="cv3"></canvas><div class="loading" id="loading">Building the truck…</div><span class="hint">drag to turn · scroll or pinch to zoom</span></div>
+      <div class="row">
+        <button data-view="front">Front ¾</button>
+        <button data-view="side">Side</button>
+        <button data-view="rear">Rear ¾</button>
+        <button data-view="top">Top</button>
+        <label class="toggle"><input type="checkbox" id="ghost" checked> Show the rest faintly</label>
+      </div>
+    </section>
+
+    <section class="card" aria-label="Layer controls">
+      <div class="stepper">
+        <button id="prev" aria-label="Previous layer">‹</button>
+        <div class="big" id="lnum">1 <small>/ 60</small></div>
+        <button id="next" aria-label="Next layer">›</button>
+        <input type="range" id="slider" min="1" max="60" value="60" aria-label="Layer">
+      </div>
+      <p class="note" id="note"></p>
+      <ul class="legend" id="legend"></ul>
+      <div class="done">
+        <label class="toggle"><input type="checkbox" id="isdone"> Layer finished</label>
+        <div class="prog" aria-hidden="true"><i id="progbar"></i></div>
+        <span class="chip" id="progtxt">0 / 60</span>
+      </div>
+      <div class="layers" id="layers" aria-label="Jump to layer"></div>
+    </section>
+  </div>
+
+  <section class="card" aria-label="Layer plan">
+    <div class="gridhead">
+      <h2 id="gridtitle">Layer 1</h2>
+      <div class="row">
+        <label class="toggle"><input type="checkbox" id="below" checked> Show layer below</label>
+        <label class="toggle"><input type="checkbox" id="hollow" checked> Skip hidden blocks</label>
+        <button id="zout" aria-label="Zoom out">−</button>
+        <button id="zfit">Fit</button>
+        <button id="zin" aria-label="Zoom in">+</button>
+      </div>
+    </div>
+    <div class="gridbox" id="gridbox"><canvas id="grid"></canvas></div>
+    <div class="cellinfo" id="cellinfo">Hover or tap a square to see its block and position. Zoom in to see block letters.</div>
+    <details class="runs" id="runsbox" open><summary>Row by row, for this layer</summary><ol id="runs"></ol></details>
+  </section>
+
+  <section class="card">
+    <h2>Shopping list</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Block</th><th>Used for</th><th class="num">Blocks</th><th class="num">Stacks of 64</th><th class="num">Shulker boxes</th></tr></thead>
+      <tbody id="mats"></tbody>
+    </table></div>
+  </section>
+
+  <section class="card">
+    <h2>How to read the plan</h2>
+    <ul class="tips">
+      <li><b>One square = one block</b><span>Columns run front to back (col 1 is the bull bar). Rows run side to side (row 1 is the passenger side, last row the driver side). Thick lines every 10.</span></li>
+      <li><b>Mark the footprint first</b><span>Lay a <span id="fp">148 × 52</span> outline on the ground with any throwaway block, then build layer 1 inside it and break the outline after.</span></li>
+      <li><b>Faint squares are the layer below</b><span>Use them to line up each new layer. The amber frame in the 3D view shows the layer you're on.</span></li>
+      <li><b>Skip hidden blocks is on</b><span>The body is built as a 1–2 block shell, so you never fill the inside of the hood or doors. Turn it off to see a solid fill instead.</span></li>
+      <li><b>Row by row</b><span>Under the grid, each row is written out as runs, e.g. "cols 12–40 B×29" means 29 Black Concrete in a straight line. Easier to follow on a TV than counting squares.</span></li>
+      <li><b>Glass sits flush</b><span>Use full stained-glass blocks, not panes, so the sloped windshield reads correctly.</span></li>
+      <li><b>Scale</b><span id="scaletip"></span></li>
+    </ul>
+  </section>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+// ---------- palette ----------
+const CODES=['','B','T','P','G','I','S','W','H','Y','O','R','K','Q','F','U'];
+const BLOCKS={
+  B:{name:'Black Concrete',use:'Body, hood, doors, roof, fender flares, mirrors, wheel tubs',c:'#24272d'},
+  T:{name:'Black Wool',use:'Tires',c:'#34353b'},
+  P:{name:'Polished Blackstone',use:'Hard bed cover, rim spokes, dashboard, bed liner, door handles',c:'#3d3c41'},
+  G:{name:'Gray Concrete',use:'Frame, axles, diffs, driveshaft, shocks, steering wheel',c:'#5a6067'},
+  I:{name:'Iron Block',use:'Chrome bull bar tube, wheel center caps, headlight projectors',c:'#dcdfe1'},
+  S:{name:'Smooth Stone',use:'Tube running boards, rim lip rings, rear bumper',c:'#a9aaaa'},
+  W:{name:'Light Gray Stained Glass',use:'Windshield and windows',c:'#a7b0b8',glass:.5},
+  H:{name:'White Stained Glass',use:'Headlights, reverse lights',c:'#f3f5f6',glass:.85},
+  Y:{name:'Yellow Concrete',use:'Headlight inner trim',c:'#f1b419'},
+  O:{name:'Orange Concrete',use:'Side marker lights',c:'#e0650f'},
+  R:{name:'Red Concrete',use:'Tail lights',c:'#a8282c'},
+  K:{name:'Blackstone',use:'Mesh grille, LED bar housing, intake, rim recess, door seams, scoop vent',c:'#16131a'},
+  Q:{name:'Quartz Block',use:'TACOMA badge, TRD Sport decal',c:'#ede8e2'},
+  F:{name:'Sea Lantern',use:'LED light bar, fog lights',c:'#d6ece8'},
+  U:{name:'Gray Wool',use:'Seats and headrests',c:'#62676d'}
+};
+const IDX={};CODES.forEach((c,i)=>IDX[c]=i);
+const [B,T,P,G,I,S_,W,H,Yc,O,R,K,Q,F,U]=CODES.slice(1).map(c=>IDX[c]);
+
+// ---------- the truck, as a shape sampled at 4 blocks per unit ----------
+let SX=4,SY=4,SZ=4,X,Y,Z,N,vox,exposed,TH=.3,TB=.5;
+const WHEELS=[7.5,30.5], WY=3.5;
+const BAR=[[[0.75,3.5,2.9],[0.5,7.3,2.9]],[[0.75,3.5,10.1],[0.5,7.3,10.1]],[[0.5,7.3,2.9],[0.45,8.1,3.9]],[[0.45,8.1,3.9],[0.45,8.1,9.1]],[[0.45,8.1,9.1],[0.5,7.3,10.1]],[[0.6,4.6,2.9],[1.2,4.6,2.9]],[[0.6,4.6,10.1],[1.2,4.6,10.1]]];
+function segDist(p,a,b){const ab=[b[0]-a[0],b[1]-a[1],b[2]-a[2]],ap=[p[0]-a[0],p[1]-a[1],p[2]-a[2]];
+  const t=Math.max(0,Math.min(1,(ap[0]*ab[0]+ap[1]*ab[1]+ap[2]*ab[2])/(ab[0]*ab[0]+ab[1]*ab[1]+ab[2]*ab[2])));
+  return Math.hypot(ap[0]-ab[0]*t,ap[1]-ab[1]*t,ap[2]-ab[2]*t);}
+const xs=y=>13.2+(y-10.45)*0.75;                      // windshield slope
+const roof=x=>15-Math.pow((x-20.2)/4.7,2)*0.35;        // gently curved roof
+function topLine(x){if(x<2.5)return 9.6+(x-1)*0.4/1.5; if(x<13.2)return 10+(x-2.5)*0.04; return 10.6;}
+function logo(c,y){
+  const e1=(c/0.95)**2+((y-7.85)/0.62)**2; if(e1>=0.6&&e1<=1)return true;
+  const e2=(c/0.7)**2+((y-8.12)/0.26)**2; if(e2>=0.45&&e2<=1)return true;
+  const e3=(c/0.28)**2+((y-7.68)/0.48)**2; return e3>=0.4&&e3<=1;
+}
+function interior(x,y,c,az){
+  if(x<15.2&&y>=9.3&&y<=10.6)return P;                                   // dash
+  const rr=Math.hypot(y-10.25,c-2.9);
+  if(x>=15.6&&x<16&&(Math.abs(rr-0.6)<0.15||(rr<0.6&&Math.abs(y-10.25)<0.13)))return G; // steering wheel
+  for(const s of[-3,3]){const d=Math.abs(c-s);
+    if(d<1.4){if(x>=16.5&&x<18.6&&y<7)return U; if(x>=18.6&&x<19.3&&y<10.8)return U;}
+    if(d<0.7&&x>=18.6&&x<19.2&&y>=11&&y<11.9)return U;}
+  if(az<4.6){if(x>=21.2&&x<23.4&&y<7)return U; if(x>=23.6&&x<24.4&&y<10.9)return U;
+    for(const s of[-3,0,3])if(Math.abs(c-s)<0.6&&x>=23.6&&x<24.3&&y>=11&&y<11.8)return U;}
+  return 0;
+}
+function classify(x,y,z){
+  const c=z-6.5, az=Math.abs(c);
+  // wheels: tread grooves, 8-spoke rims, hub cap
+  for(const cx of WHEELS){const dx=x-cx,dy=y-WY,r=Math.hypot(dx,dy);
+    if(r<=3.5&&az>=4.3){const out=6.5-az;
+      if(r>3.15&&(out<0.25||az<4.55))return 0;
+      if(r>2.35){if(r>3.2){const a=Math.atan2(dy,dx);if(Math.floor((a+Math.PI)/(2*Math.PI)*30)%2&&out>0.5&&out<1.7)return 0;}return T;}
+      if(out<0.25){const a=Math.atan2(dy,dx); if(r<0.6)return I; if(r>1.9)return(Math.floor((a+Math.PI)/(2*Math.PI)*24)%4===0)?P:S_; const seg=Math.PI/4; let m=((a%seg)+seg)%seg; m=Math.min(m,seg-m); return (m*r<0.28||r<0.8)?P:0;}
+      return out<0.5?K:G;
+    }}
+  // bull bar and skid plates
+  if(x<1.3)for(const[a,b]of BAR)if(segDist([x,y,z],a,b)<0.46)return I;
+  if(x>=0.2&&x<0.85&&y>=6.0&&y<6.75&&z>=3.3&&z<=9.7)return x<0.5&&z>3.5&&z<9.5?F:K;
+  // underneath: frame, axles, diffs, shocks, driveshaft
+  if(y<5&&x>=3&&x<36){
+    if(y>=4.1&&y<4.9&&az>=2.6&&az<3.25)return G;
+    for(const cx of WHEELS){if(Math.hypot(x-cx,y-WY)<0.42&&az<4.4)return G; if(Math.hypot(x-cx,y-3.4,c)<1.05)return G;
+      if(Math.hypot(x-(cx+1.3),az-3.3)<0.32&&y>=3.5)return G;}
+    if(x>8.5&&x<29.5&&Math.hypot(y-3.7,c)<0.3)return G;
+  }
+  // mirrors, running boards, fender flares, wheel wells
+  if(x>=14.2&&x<15.4&&y>=10.8&&y<12.2&&az>=5.3)return B;
+  if(x>=14.6&&x<15.1&&y>=10.5&&y<11&&az>=4.8&&az<5.5)return B;
+  if(x>=13.5&&x<25.5&&Math.hypot(y-4.45,az-5.55)<0.42)return S_;
+  if(x>=13.5&&x<25.5&&y>=4.65&&y<5.1&&az>=5&&az<5.5&&(x%3)<0.4)return K;
+  for(const cx of WHEELS){const r=Math.hypot(x-cx,y-WY);
+    if(r>=4.25&&r<5&&y>=4.2&&az>=4.9&&az<6.3)return B;
+    if(r<4.25&&az>3.5)return 0;}
+  // hood scoop
+  const t=topLine(x);
+  if(x>=5&&x<10.5&&az<2.2&&y>=t&&y<t+0.65*Math.min(1,(x-5)/0.8+0.3))return(x<5.4&&az<1.8&&y>t+0.12)?K:B;
+  // body envelope
+  if(x<1||x>=37)return 0;
+  const bot=(x<3||x>=36)?4:5; if(y<bot)return 0;
+  const inCab=x>=13.2&&x<24.9;
+  if(inCab?!(y<=10.45||(x>=xs(y)&&y<=roof(x))):y>t)return 0;
+  const tt=inCab?roof(x):t;
+  let h=5.5; if(x<2.2)h-=(2.2-x)*(2.2-x)*0.45;
+  if(inCab&&y>10.6)h=5.35-(y-10.6)*0.22;
+  if(y>tt-0.5)h-=(y-(tt-0.5))*0.9;
+  if(y<bot+0.35)h-=(bot+0.35-y)*0.8;
+  if(az>h)return 0;
+  const side=az>h-TH;
+  // nose
+  if(x<1.5){
+    if(y>=8&&y<9.7&&az>=3&&az<5.1){if(az<3.5)return Yc; if(Math.hypot(az-4.1,y-8.85)<0.45)return I; return H;}
+    if(az<2.9&&y>=6&&y<9.4){
+      if(az>2.6||y>9.15||y<6.25)return B;
+      if(x<1.25)return(Math.floor(y*SY)+Math.floor(z*SZ))%2?K:0;
+      return K;}
+    if(y>=4.75&&y<5.75&&az<2.5)return x<1.25?0:K;
+    if(Math.hypot(az-4,y-5.4)<0.45)return F;
+  }
+  if(side&&x<3.2&&y>=8&&y<9.7)return(x>=2.6&&y<8.6)?O:H;
+  // tail
+  if(x>=36){
+    if(y<5.25)return S_;
+    if(y>=7.2&&y<10.2&&az>=4.1&&(x>=36.75||side))return(y>=8.2&&y<8.7)?H:R;
+    if(x>=37-TB/2&&y>=9.4&&y<9.9&&az<0.8)return P;
+  }
+  // door seams, handles, badge
+  if(side&&y>=5.5&&y<10.4){
+    if((x>=13.6&&x<13.85)||(x>=19.4&&x<19.65))return K;
+    if(y>=9.5&&y<9.8&&((x>=17.2&&x<18)||(x>=22.6&&x<23.4)))return P;
+    if(x>=10.5&&x<12.5&&y>=8.5&&y<8.75)return Q;
+    if(x>=32.6&&x<35.4&&y>=8.55&&y<9.35)return Math.floor(x*SX)%4===3?B:Q;
+  }
+  // cab: windshield, side glass, pillars, rear glass, interior
+  if(inCab){
+    if(y>10.45){const rt=roof(x);
+      if(y>rt-TH)return B;
+      if(x<xs(y)+TH)return(az<h-TH-0.15&&y<rt-TH-0.15)?W:B;
+      if(x>=24.9-TH)return(y>=11&&y<14.2&&az<2.6)?W:B;
+      if(side)return(y>=10.75&&y<rt-0.4&&((x>=xs(y)+0.65&&x<19.2)||(x>=19.9&&x<24.3)))?W:B;
+    }
+    if(x>=13.6&&x<24.9-TH&&y>5.75&&!side)return interior(x,y,c,az);
+    return B;
+  }
+  // gap between cab and bed
+  if(x>=24.9&&x<25.15&&y>5.5)return 0;
+  // bed
+  if(x>=25.15+TB&&x<37-TB&&az<h-TB){
+    if(y>10.6-TH)return P;
+    if(y>6.25)return(Math.hypot(x-30.5,y-WY)<4.75&&az>3.5)?B:0;
+    if(y>5.75)return P;
+  }
+  return B;
+}
+
+const id=(i,j,k)=>(j*Z+k)*X+i;
+function voxelize(lx,wz,hy){
+  X=lx;Z=wz;Y=hy;SX=X/37;SZ=Z/13;SY=Y/15;const sm=Math.min(SX,SY,SZ);TH=Math.max(.3,1.05/sm);TB=Math.max(.5,1.05/sm);
+  N=X*Y*Z;vox=new Uint8Array(N);
+  for(let j=0;j<Y;j++)for(let k=0;k<Z;k++)for(let i=0;i<X;i++)vox[id(i,j,k)]=classify((i+.5)/SX,(j+.5)/SY,(k+.5)/SZ);
+  exposed=new Uint8Array(N);
+  for(let j=0;j<Y;j++)for(let k=0;k<Z;k++)for(let i=0;i<X;i++){const n=id(i,j,k);if(!vox[n])continue;
+    exposed[n]=!(solidAt(i+1,j,k)&&solidAt(i-1,j,k)&&solidAt(i,j+1,k)&&solidAt(i,j-1,k)&&solidAt(i,j,k+1)&&solidAt(i,j,k-1))?1:0;}
+}
+const isGlass=v=>v&&BLOCKS[CODES[v]].glass;
+const solidAt=(i,j,k)=>{if(i<0||j<0||k<0||i>=X||j>=Y||k>=Z)return false;const v=vox[id(i,j,k)];return v&&!isGlass(v);};
+
+// ---------- state ----------
+const $=q=>document.getElementById(q);
+const store={get(k,d){try{const v=localStorage.getItem(k);return v===null?d:JSON.parse(v);}catch(e){return d;}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}};
+let L=60, done=[];
+const doneKey=()=>'tacoma-done-'+X+'x'+Z+'x'+Y;
+$('hollow').checked=store.get('tacoma4-hollow',true);
+const keep=n=>!$('hollow').checked||exposed[n];
+function counts(j){const c={};const j0=j===undefined?0:j,j1=j===undefined?Y-1:j;
+  for(let jj=j0;jj<=j1;jj++)for(let k=0;k<Z;k++)for(let i=0;i<X;i++){const n=id(i,jj,k),v=vox[n];if(v&&keep(n))c[CODES[v]]=(c[CODES[v]]||0)+1;}
+  return c;}
+const stacks=n=>{const s=Math.floor(n/64),r=n%64;return s?(s+' + '+r):String(r);};
+function lum(hex){const n=parseInt(hex.slice(1),16);return(0.299*(n>>16)+0.587*(n>>8&255)+0.114*(n&255))/255;}
+
+const NOTES=[[3.4,'Tires and rims: tread grooves, 8 black spokes, silver lip ring and chrome center cap.'],
+  [4.1,'Axles, differentials, driveshaft and the feet of the bull bar.'],
+  [5,'Frame rails, bull bar tubes, front and rear bumpers, tube running boards, fender flares.'],
+  [6.3,'Body floor, fog lights, lower intake, bed floor and seat cushions.'],
+  [8,'Doors, mesh grille, LED light bar in the bull bar, tail lights.'],
+  [9.7,'Headlights with yellow trim and projectors, orange side markers, door handles, TACOMA badge, TRD Sport decal.'],
+  [10.7,'Hood, hood scoop, belt line, hard bed cover, dashboard and steering wheel.'],
+  [14.6,'Windshield and windows. Pillars between the front and rear doors. Headrests show through the glass.'],
+  [99,'Curved roof.']];
+const noteFor=l=>{const y=(l-.5)/SY;return NOTES.find(n=>y<n[0])[1];};
+
+// ---------- 3D view ----------
+let renderer,scene,camera,controls,meshes={},ghostMesh,frame,mat4,col;
+function init3d(){
+  if(!window.THREE){$('loading').textContent='The 3D viewer could not load (three.js is blocked). The layer plan below still works.';return;}
+  try{renderer=new THREE.WebGLRenderer({canvas:$('cv3'),antialias:true,alpha:true});}
+  catch(e){$('loading').textContent='This browser has WebGL turned off, so the 3D view is unavailable. The layer plan below still works.';return;}
+  $('loading').hidden=true;
+  renderer.setPixelRatio(Math.min(2,window.devicePixelRatio||1));
+  scene=new THREE.Scene();
+  camera=new THREE.PerspectiveCamera(30,1,1,4000);
+  scene.add(new THREE.HemisphereLight(0xffffff,0x555a60,1.0));
+  const sun=new THREE.DirectionalLight(0xffffff,0.75);sun.position.set(-1,2.2,1.3);scene.add(sun);
+  const ground=new THREE.Mesh(new THREE.PlaneGeometry(420,320),new THREE.MeshBasicMaterial({color:0x000000,transparent:true,opacity:.08}));
+  ground.rotation.x=-Math.PI/2;ground.position.y=-0.05;scene.add(ground);
+  controls=new THREE.OrbitControls(camera,$('cv3'));controls.enableDamping=false;
+  controls.addEventListener('change',render);
+  new ResizeObserver(resize).observe($('stage'));
+  mat4=new THREE.Matrix4();col=new THREE.Color();
+}
+let dyn=[];
+function buildMeshes(){
+  if(!renderer)return;
+  for(const o of dyn){scene.remove(o);o.geometry.dispose();o.material.dispose();}
+  dyn=[];meshes={};
+  const box=new THREE.BoxGeometry(1,1,1);
+  const totals={};for(let n=0;n<N;n++)if(vox[n])totals[vox[n]]=(totals[vox[n]]||0)+1;
+  for(const v in totals){const bl=BLOCKS[CODES[v]];
+    const m=new THREE.MeshLambertMaterial({color:0xffffff,transparent:!!bl.glass,opacity:bl.glass||1,depthWrite:!bl.glass});
+    const mesh=new THREE.InstancedMesh(box,m,totals[v]);mesh.count=0;mesh.frustumCulled=false;
+    mesh.instanceColor=new THREE.InstancedBufferAttribute(new Float32Array(totals[v]*3),3);
+    if(bl.glass)mesh.renderOrder=2;meshes[v]=mesh;scene.add(mesh);dyn.push(mesh);}
+  let ex=0;for(let n=0;n<N;n++)if(exposed[n])ex++;
+  ghostMesh=new THREE.InstancedMesh(box,new THREE.MeshBasicMaterial({color:0x2a2e34,transparent:true,opacity:.07,depthWrite:false}),ex);
+  ghostMesh.count=0;ghostMesh.frustumCulled=false;ghostMesh.renderOrder=3;scene.add(ghostMesh);dyn.push(ghostMesh);
+  const fg=new THREE.BufferGeometry().setFromPoints([[-1,-1],[X+1,-1],[X+1,Z+1],[-1,Z+1]].map(([a,b])=>new THREE.Vector3(a-X/2,0,b-Z/2)));
+  frame=new THREE.LineLoop(fg,new THREE.LineBasicMaterial({color:0xf1b419}));scene.add(frame);dyn.push(frame);
+  controls.target.set(0,Y*0.42,0);setView('front');resize();
+}
+function setView(v){if(!camera)return;const d=X*1.55,dir=new THREE.Vector3();
+  if(v==='front')dir.set(-0.72,0.42,0.6).normalize();
+  if(v==='rear')dir.set(0.75,0.45,-0.55).normalize();
+  if(v==='side')dir.set(0,0.12,1).normalize();
+  if(v==='top')dir.set(0.001,1,0.12).normalize();
+  camera.position.copy(controls.target).addScaledVector(dir,d);camera.lookAt(controls.target);controls.update();render();}
+function resize(){if(!renderer)return;const r=$('stage').getBoundingClientRect();renderer.setSize(r.width,r.height,false);camera.aspect=r.width/r.height;camera.updateProjectionMatrix();render();}
+function render(){if(renderer)renderer.render(scene,camera);}
+function hash(n){n=(n^61)^(n>>>16);n=n+(n<<3);n=n^(n>>>4);n=Math.imul(n,0x27d4eb2d);return((n^(n>>>15))>>>0)/4294967296;}
+function update3d(){
+  if(!renderer||!ghostMesh)return;
+  const fill={};for(const v in meshes)fill[v]=0;let g=0;const ghost=$('ghost').checked;
+  for(let j=0;j<Y;j++)for(let k=0;k<Z;k++)for(let i=0;i<X;i++){const n=id(i,j,k),v=vox[n];if(!v)continue;
+    if(j<L){if(!keep(n))continue; if(!exposed[n]&&j!==L-1)continue;
+      const m=meshes[v];mat4.makeTranslation(i-X/2+.5,j+.5,k-Z/2+.5);m.setMatrixAt(fill[v],mat4);
+      col.set(BLOCKS[CODES[v]].c);const s=0.9+hash(n)*0.2;col.r*=s;col.g*=s;col.b*=s;m.setColorAt(fill[v],col);fill[v]++;}
+    else if(ghost&&exposed[n]){mat4.makeTranslation(i-X/2+.5,j+.5,k-Z/2+.5);ghostMesh.setMatrixAt(g++,mat4);}}
+  for(const v in meshes){const m=meshes[v];m.count=fill[v];m.instanceMatrix.needsUpdate=true;if(m.instanceColor)m.instanceColor.needsUpdate=true;}
+  ghostMesh.count=g;ghostMesh.instanceMatrix.needsUpdate=true;
+  frame.position.y=L+0.02;render();
+}
+document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>setView(b.dataset.view));
+
+// ---------- layer grid ----------
+const gc=$('grid'),g2=gc.getContext('2d');const LAB=28;let CS=0,fitCS=6;
+function css(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim();}
+function computeFit(){const bw=$('gridbox').clientWidth;fitCS=Math.max(3,Math.floor((bw-LAB-4)/X));if(!CS)CS=fitCS;}
+function drawGrid(){
+  if(!vox)return;
+  computeFit();
+  const dpr=window.devicePixelRatio||1,Wd=LAB+X*CS+2,Hd=LAB+Z*CS+22;
+  gc.width=Wd*dpr;gc.height=Hd*dpr;gc.style.width=Wd+'px';gc.style.height=Hd+'px';g2.setTransform(dpr,0,0,dpr,0,0);
+  const fg=css('--fg'),muted=css('--muted'),line=css('--line'),cell=css('--cell'),panel=css('--panel');
+  g2.fillStyle=cell;g2.fillRect(0,0,Wd,Hd);g2.fillStyle=panel;g2.fillRect(LAB,LAB,X*CS,Z*CS);
+  const j=L-1,below=$('below').checked;
+  for(let k=0;k<Z;k++)for(let i=0;i<X;i++){const px=LAB+i*CS,py=LAB+k*CS,n=id(i,j,k),v=vox[n];
+    if(v&&keep(n)){const c=BLOCKS[CODES[v]].c;g2.fillStyle=c;g2.fillRect(px,py,CS,CS);
+      if(CS>=15){g2.fillStyle=lum(c)<.5?'rgba(255,255,255,.8)':'rgba(0,0,0,.72)';g2.font='600 '+Math.min(11,CS-6)+'px "IBM Plex Mono", monospace';g2.textAlign='center';g2.textBaseline='middle';g2.fillText(CODES[v],px+CS/2,py+CS/2+.5);}}
+    else if(below&&j>0){const nb=id(i,j-1,k),vb=vox[nb];if(vb&&keep(nb)){g2.fillStyle=BLOCKS[CODES[vb]].c;g2.globalAlpha=.2;g2.fillRect(px+CS*.2,py+CS*.2,CS*.6,CS*.6);g2.globalAlpha=1;}}}
+  // grid lines: fine every block when zoomed, heavy every 10
+  for(let i=0;i<=X;i++){const heavy=i%10===0;if(!heavy&&CS<7)continue;g2.strokeStyle=heavy?muted:line;g2.globalAlpha=heavy?.55:1;g2.beginPath();g2.moveTo(LAB+i*CS+.5,LAB);g2.lineTo(LAB+i*CS+.5,LAB+Z*CS);g2.stroke();}
+  for(let k=0;k<=Z;k++){const heavy=k%10===0;if(!heavy&&CS<7)continue;g2.strokeStyle=heavy?muted:line;g2.globalAlpha=heavy?.55:1;g2.beginPath();g2.moveTo(LAB,LAB+k*CS+.5);g2.lineTo(LAB+X*CS,LAB+k*CS+.5);g2.stroke();}
+  g2.globalAlpha=1;g2.fillStyle=muted;g2.font='600 10px "IBM Plex Mono", monospace';g2.textBaseline='middle';
+  g2.textAlign='left';for(let i=0;i<X;i+=10)g2.fillText(i+1,LAB+i*CS+2,LAB/2);
+  g2.textAlign='right';for(let k=0;k<Z;k+=10)g2.fillText(k+1,LAB-4,LAB+k*CS+CS/2);
+  g2.fillStyle=fg;g2.font='600 11px "IBM Plex Sans", sans-serif';g2.textAlign='left';g2.fillText('◀ FRONT',LAB,LAB+Z*CS+12);
+  g2.textAlign='right';g2.fillText('REAR ▶',LAB+X*CS,LAB+Z*CS+12);
+  g2.textAlign='center';g2.fillStyle=muted;g2.fillText('row 1 = passenger side · row '+Z+' = driver side',LAB+X*CS/2,LAB+Z*CS+12);
+}
+function showCell(e){const r=gc.getBoundingClientRect();const i=Math.floor((e.clientX-r.left-LAB)/CS),k=Math.floor((e.clientY-r.top-LAB)/CS);
+  if(i<0||i>=X||k<0||k>=Z)return;const n=id(i,L-1,k),v=vox[n];
+  $('cellinfo').textContent=`Layer ${L} · col ${i+1} · row ${k+1} · `+(v?(keep(n)?BLOCKS[CODES[v]].name:BLOCKS[CODES[v]].name+' (hidden, skipped)'):'air');}
+gc.addEventListener('pointermove',showCell);gc.addEventListener('pointerdown',showCell);
+$('zin').onclick=()=>{CS=Math.min(24,Math.max(CS+1,Math.round(CS*1.5)));drawGrid();};
+$('zout').onclick=()=>{CS=Math.max(3,Math.round(CS/1.5));drawGrid();};
+$('zfit').onclick=()=>{CS=fitCS;drawGrid();};
+
+// ---------- panels ----------
+function renderRuns(){const ol=$('runs');ol.innerHTML='';const j=L-1;let any=false;
+  for(let k=0;k<Z;k++){const runs=[];let cur=null;
+    for(let i=0;i<X;i++){const n=id(i,j,k),v=vox[n];const b=(v&&keep(n))?CODES[v]:'';
+      if(b&&cur&&cur.b===b&&cur.e===i-1)cur.e=i;else if(b){cur={b,s:i,e:i};runs.push(cur);}else cur=null;}
+    if(!runs.length)continue;any=true;
+    const li=document.createElement('li');
+    li.innerHTML=`<span class="rn">Row ${k+1}</span><span class="rs">`+runs.map(r=>{const bl=BLOCKS[r.b],len=r.e-r.s+1;
+      return `<span class="r1" title="${bl.name}"><i style="background:${bl.c}"></i>${r.s===r.e?'col '+(r.s+1):'cols '+(r.s+1)+'–'+(r.e+1)} ${r.b}×${len}</span>`;}).join('')+'</span>';
+    ol.appendChild(li);}
+  if(!any)ol.innerHTML='<li>Nothing to place on this layer.</li>';}
+function renderLegend(){const c=counts(L-1),ul=$('legend');ul.innerHTML='';
+  const ks=Object.keys(c).sort((a,b)=>c[b]-c[a]);
+  for(const b of ks){const bl=BLOCKS[b],li=document.createElement('li');
+    li.innerHTML=`<span class="sw" style="background:${bl.c};color:${lum(bl.c)<.5?'#fff':'#111'}">${b}</span><span>${bl.name}</span><span class="n">${c[b]}</span>`;ul.appendChild(li);}}
+function renderMats(){const c=counts(),tb=$('mats');tb.innerHTML='';
+  for(const b of Object.keys(c).sort((a,b)=>c[b]-c[a])){const bl=BLOCKS[b],tr=document.createElement('tr');
+    tr.innerHTML=`<td><span class="row" style="flex-wrap:nowrap"><span class="sw" style="background:${bl.c};color:${lum(bl.c)<.5?'#fff':'#111'}">${b}</span>${bl.name}</span></td><td>${bl.use}</td><td class="num">${c[b].toLocaleString()}</td><td class="num">${stacks(c[b])}</td><td class="num">${(c[b]/1728).toFixed(1)}</td>`;tb.appendChild(tr);}
+  const total=Object.values(c).reduce((a,b)=>a+b,0);
+  $('chips').innerHTML=`<span class="chip"><b>${X}</b> long</span><span class="chip"><b>${Z}</b> wide</span><span class="chip"><b>${Y}</b> layers</span><span class="chip"><b>${total.toLocaleString()}</b> blocks</span>`;}
+function renderLayers(){const box=$('layers');box.innerHTML='';
+  for(let i=1;i<=Y;i++){const b=document.createElement('button');b.textContent=i;if(i===L)b.className='cur';if(done.includes(i))b.classList.add('ok');
+    b.setAttribute('aria-label','Layer '+i+(done.includes(i)?', finished':''));b.onclick=()=>setL(i);box.appendChild(b);}
+  $('isdone').checked=done.includes(L);$('progtxt').textContent=done.length+' / '+Y;$('progbar').style.width=(done.length/Y*100)+'%';}
+let raf=0;
+function setL(n){L=Math.max(1,Math.min(Y,n));$('slider').value=L;$('lnum').innerHTML=`${L} <small>/ ${Y}</small>`;
+  $('note').innerHTML=`<span class="y">Layer ${L} of ${Y}</span>${noteFor(L)}`;$('gridtitle').textContent='Layer '+L;
+  renderLegend();renderRuns();renderLayers();cancelAnimationFrame(raf);raf=requestAnimationFrame(()=>{update3d();drawGrid();});}
+$('prev').onclick=()=>setL(L-1);$('next').onclick=()=>setL(L+1);
+$('slider').oninput=e=>setL(+e.target.value);
+$('ghost').onchange=update3d;$('below').onchange=drawGrid;
+$('hollow').onchange=()=>{store.set('tacoma4-hollow',$('hollow').checked);renderMats();setL(L);};
+$('isdone').onchange=e=>{done=done.filter(i=>i!==L);if(e.target.checked)done.push(L);store.set(doneKey(),done);renderLayers();};
+document.addEventListener('keydown',e=>{if(e.target.tagName==='INPUT'&&e.target.type==='range')return;if(e.key==='ArrowRight')setL(L+1);if(e.key==='ArrowLeft')setL(L-1);});
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change',drawGrid);
+new MutationObserver(drawGrid).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+new ResizeObserver(()=>{const f=fitCS;computeFit();if(CS===f)CS=fitCS;drawGrid();}).observe($('gridbox'));
+function rebuild(lx,wz,hy){
+  $('sizeinfo').textContent='Building…';
+  setTimeout(()=>{
+    voxelize(lx,wz,hy);done=store.get(doneKey(),[]);CS=0;
+    $('slider').max=Y;$('fp').textContent=X+' × '+Z;
+    const tire=Math.round(7*SY);
+    $('scaletip').textContent=`About ${(518/X).toFixed(1)} cm (${(204/X).toFixed(1)} in) per block. The truck stands ${Y} blocks tall on ${tire}-block tires.`;
+    buildMeshes();renderMats();setL(Y);
+    $('sizeinfo').textContent=`${X} long × ${Z} wide × ${Y} tall. Full blocks only, no stairs or slabs.`;
+    store.set('tacoma-size2',[X,Z,Y]);
+  },20);
+}
+const BASE={L:37,W:13,H:15};
+function syncLabels(){$('vL').textContent=$('sL').value;$('vW').textContent=$('sW').value;$('vH').textContent=$('sH').value;}
+for(const [sid,dim] of [['sL','L'],['sW','W'],['sH','H']]){
+  const el=$(sid);
+  el.addEventListener('input',()=>{if($('lock').checked){const f=el.value/BASE[dim];
+      $('sL').value=Math.round(37*f);$('sW').value=Math.round(13*f);$('sH').value=Math.round(15*f);}
+    syncLabels();});
+  el.addEventListener('change',()=>rebuild(+$('sL').value,+$('sW').value,+$('sH').value));
+}
+$('inch').onclick=()=>{$('lock').checked=true;$('sL').value=102;$('sW').value=36;$('sH').value=41;syncLabels();rebuild(102,36,41);};
+init3d();
+const saved=store.get('tacoma-size2',[102,36,41]);
+$('sL').value=saved[0];$('sW').value=saved[1];$('sH').value=saved[2];syncLabels();
+rebuild(saved[0],saved[1],saved[2]);
+document.fonts&&document.fonts.ready.then(drawGrid);
+</script>
+</body>
+</html>
